@@ -445,17 +445,143 @@ private static boolean memberCanBeDeleted(int mid) {
 		return true;
 		
 	}
+
+	private static void addSkipass(String email, String passType) {
+		
+		final String oracleURL =   // Magic lectura -> aloe access spell
+	            "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+	
+		
+		String username = "gabebarros",    // Oracle DBMS username
+		       password = "a7693";    // Oracle DBMS password
+		
+		    // load the (Oracle) JDBC driver by initializing its base
+		    // class, 'oracle.jdbc.OracleDriver'.
+		
+		try {
+		
+		        Class.forName("oracle.jdbc.OracleDriver");
+		
+		} catch (ClassNotFoundException e) {
+		
+		        System.err.println("*** ClassNotFoundException:  "
+		            + "Error loading Oracle JDBC driver.  \n"
+		            + "\tPerhaps the driver is not on the Classpath?");
+		        System.exit(-1);
+		
+		}
+		
+		    // make and return a database connection to the user's
+		    // Oracle database
+		
+		Connection dbconn = null;
+		
+		try {
+		        dbconn = DriverManager.getConnection
+		                       (oracleURL,username,password);
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not open JDBC connection.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+		    // Send the query to the DBMS, and get and display the results
+		
+		Statement stmt = null;
+		ResultSet rs = null;
+		int answer;
+		int spid = 0;
+		int mid = 0;
+		
+		if (getMidByEmail(email) == -1) {
+			System.out.println("There is no member with this email");
+			System.out.println();
+		}
+		else {
+			mid = getMidByEmail(email);
+		}
+		
+		try { 
+	        String query = "SELECT max(spid) FROM bhousmans.skipass";
+	        stmt = dbconn.createStatement();
+		    rs = stmt.executeQuery(query);
+		    
+		    if (rs.next()) {
+		        spid = rs.getInt(1) + 1;  
+		    } 
+		    else {
+		        spid = 1;
+		    }		    
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not fetch query results.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+		try { 
+			double cost;
+			if (passType.equals("1-day")) {
+				cost = 99.99;
+			}
+			else if (passType.equals("2-day")) {
+				cost = 149.99;
+			}
+			else if (passType.equals("4-day")) {
+				cost = 215.49;
+			}
+			else {
+				cost = 499.99;
+			}
+			
+			String query =     
+				    "INSERT INTO bhousmans.skipass" + 
+				    " (spid, mid, passtype, expirydate, notimesused, cost) " + 
+				    "VALUES (" + spid + ", " + mid + ", '" + passType + "', SYSDATE + INTERVAL '1' YEAR, 0, " + cost + ")";
+	
+	        stmt = dbconn.createStatement();
+		    answer = stmt.executeUpdate(query);
+	            
+	        System.out.println("Pass purchased");
+		
+		        // Shut down the connection to the DBMS.
+		
+		    stmt.close();  
+		    dbconn.close();
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not fetch query results.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+	}
 	
 	
-	
-	public static void main(String[] args) {
+public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);  // use to get user input
 
         // the string to display to users when they run the program
         String menuStr = "Options: \n"
 				+ "1 - Add Member \n"
         		+ "2 - Update Member \n"
-        		+ "3 - Delete Member";
+        		+ "3 - Delete Member \n"
+        		+ "4 - Add a ski pass";
 				
 		// prompt for operations/queries until termination
         while (true) {
@@ -516,6 +642,42 @@ private static boolean memberCanBeDeleted(int mid) {
                String email = scanner.nextLine();  // store email
                
                deleteMember(email);
+           }
+           else if (input.strip().equals("4")) {
+        	   System.out.println("What is the member's email?");
+        	   System.out.println();
+               String email = scanner.nextLine();  // store email
+               
+               if (getMidByEmail(email) == -1) {
+            	   System.out.println("No member with this email");
+            	   System.out.println();
+               }
+               else {
+            	   System.out.println("What kind of pass do you want to purchase? \n"
+            	   		+ "1 - 1 day \n"
+            	   		+ "2 - 2 day \n"
+            	   		+ "3 - 4 day \n"
+            	   		+ "4 - season");
+            	   System.out.println();
+                   String passInput = scanner.nextLine();  // store user input
+                   
+                   if (passInput.strip().equals("1")) {
+                	   addSkipass(email, "1-day");
+                   }
+                   else if (passInput.strip().equals("2")) {
+                	   addSkipass(email, "2-day");
+                   }
+                   else if (passInput.strip().equals("3")) {
+                	   addSkipass(email, "4-day");
+                   }
+                   else if (passInput.strip().equals("4")) {
+                	   addSkipass(email, "season");
+                   }
+                   else {
+                	   System.out.println("Invalid option");
+                	   System.out.println();
+                   }
+               }
            }
            else {
         	   System.out.println("Invalid option");
