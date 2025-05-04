@@ -572,6 +572,85 @@ private static boolean memberCanBeDeleted(int mid) {
 		
 	}
 	
+private static void updateSkipass(String spid, String count) {
+		
+		final String oracleURL =   // Magic lectura -> aloe access spell
+                "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+	
+		
+		String username = "gabebarros",    // Oracle DBMS username
+		       password = "a7693";    // Oracle DBMS password
+		
+		    // load the (Oracle) JDBC driver by initializing its base
+		    // class, 'oracle.jdbc.OracleDriver'.
+		
+		try {
+		
+		        Class.forName("oracle.jdbc.OracleDriver");
+		
+		} catch (ClassNotFoundException e) {
+		
+		        System.err.println("*** ClassNotFoundException:  "
+		            + "Error loading Oracle JDBC driver.  \n"
+		            + "\tPerhaps the driver is not on the Classpath?");
+		        System.exit(-1);
+		
+		}
+		
+		    // make and return a database connection to the user's
+		    // Oracle database
+		
+		Connection dbconn = null;
+		
+		try {
+		        dbconn = DriverManager.getConnection
+		                       (oracleURL,username,password);
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not open JDBC connection.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+		    // Send the query to the DBMS, and get and display the results
+		
+		Statement stmt = null;
+		int answer;
+		
+		try { 
+            String query =       // our test query
+            		"UPDATE bhousmans.skipass" 
+            		+ " SET notimesused=" + count
+            		+ " WHERE spid=" + spid;
+
+            stmt = dbconn.createStatement();
+		    answer = stmt.executeUpdate(query);
+	            
+            System.out.println("Ski pass updated");
+		
+		        // Shut down the connection to the DBMS.
+		
+		    stmt.close();  
+		    dbconn.close();
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not fetch query results.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+	}
+	
 	
 public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);  // use to get user input
@@ -581,7 +660,8 @@ public static void main(String[] args) {
 				+ "1 - Add Member \n"
         		+ "2 - Update Member \n"
         		+ "3 - Delete Member \n"
-        		+ "4 - Add a ski pass";
+        		+ "4 - Add a ski pass \n"
+        		+ "5 - Update ski pass";
 				
 		// prompt for operations/queries until termination
         while (true) {
@@ -678,6 +758,17 @@ public static void main(String[] args) {
                 	   System.out.println();
                    }
                }
+           }
+           else if (input.strip().equals("5")) {
+        	   System.out.println("What is the ski pass ID?");
+        	   System.out.println();
+               String spid = scanner.nextLine();  // store spid
+               
+               System.out.println("What do you want to update the number of uses to?");
+        	   System.out.println();
+               String count = scanner.nextLine();  // store usage count
+               
+               updateSkipass(spid, count);
            }
            else {
         	   System.out.println("Invalid option");
