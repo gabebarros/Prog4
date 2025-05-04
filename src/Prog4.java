@@ -650,6 +650,173 @@ private static void updateSkipass(String spid, String count) {
 		}
 		
 	}
+
+	private static void deleteSkipass(String spid) {
+		
+		final String oracleURL =   // Magic lectura -> aloe access spell
+	            "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+	
+		
+		String username = "gabebarros",    // Oracle DBMS username
+		       password = "a7693";    // Oracle DBMS password
+		
+		    // load the (Oracle) JDBC driver by initializing its base
+		    // class, 'oracle.jdbc.OracleDriver'.
+		
+		try {
+		
+		        Class.forName("oracle.jdbc.OracleDriver");
+		
+		} catch (ClassNotFoundException e) {
+		
+		        System.err.println("*** ClassNotFoundException:  "
+		            + "Error loading Oracle JDBC driver.  \n"
+		            + "\tPerhaps the driver is not on the Classpath?");
+		        System.exit(-1);
+		
+		}
+		
+		    // make and return a database connection to the user's
+		    // Oracle database
+		
+		Connection dbconn = null;
+		
+		try {
+		        dbconn = DriverManager.getConnection
+		                       (oracleURL,username,password);
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not open JDBC connection.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+		    // Send the query to the DBMS, and get and display the results
+		
+		Statement stmt = null;
+		int answer;
+		
+		if (!skipassCanBeDeleted(spid)) {
+			System.out.println("Ski pass cannot be deleted because the pass has not expired or has remaining uses (Or there is no ski pass with that ID)");
+			System.out.println();
+			return;
+		}
+		
+		try { 
+	        String query = 
+	        		"DELETE FROM bhousmans.skipass" 
+	        		+ " WHERE spid=" + spid;
+	
+	        stmt = dbconn.createStatement();
+		    answer = stmt.executeUpdate(query);
+		    	            
+	        System.out.println("Ski pass deleted");
+		
+		        // Shut down the connection to the DBMS.
+		
+		    stmt.close();  
+		    dbconn.close();
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not fetch query results.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+	}
+	
+	private static boolean skipassCanBeDeleted(String spid) {
+		
+		final String oracleURL =   // Magic lectura -> aloe access spell
+	            "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+	
+		String username = "gabebarros",    // Oracle DBMS username
+		       password = "a7693";    // Oracle DBMS password
+		
+		    // load the (Oracle) JDBC driver by initializing its base
+		    // class, 'oracle.jdbc.OracleDriver'.
+		
+		try {
+		
+		        Class.forName("oracle.jdbc.OracleDriver");
+		
+		} catch (ClassNotFoundException e) {
+		
+		        System.err.println("*** ClassNotFoundException:  "
+		            + "Error loading Oracle JDBC driver.  \n"
+		            + "\tPerhaps the driver is not on the Classpath?");
+		        System.exit(-1);
+		
+		}
+		
+		    // make and return a database connection to the user's
+		    // Oracle database
+		
+		Connection dbconn = null;
+		
+		try {
+		        dbconn = DriverManager.getConnection
+		                       (oracleURL,username,password);
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not open JDBC connection.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+		    // Send the query to the DBMS, and get and display the results
+		
+		Statement stmt = null;
+		
+		try { 
+			String query =   // check if there are any tuples
+				    "SELECT spid FROM bhousmans.skipass WHERE spid = " + spid + 
+				    " AND notimesused > 20 AND expirydate < SYSDATE";
+	
+	        stmt = dbconn.createStatement();
+	        ResultSet rs = stmt.executeQuery(query);
+	        
+	        // return true if there are any tuples
+	        if (rs.next()) {
+	            return true;
+	        }
+		
+		        // Shut down the connection to the DBMS.
+		
+	        rs.close();
+		    stmt.close();  
+		    dbconn.close();
+		    
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not fetch query results.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+		return false;
+		
+	}
 	
 	
 public static void main(String[] args) {
@@ -661,7 +828,8 @@ public static void main(String[] args) {
         		+ "2 - Update Member \n"
         		+ "3 - Delete Member \n"
         		+ "4 - Add a ski pass \n"
-        		+ "5 - Update ski pass";
+        		+ "5 - Update ski pass \n"
+        		+ "6 - Delete a ski pass";
 				
 		// prompt for operations/queries until termination
         while (true) {
@@ -769,6 +937,13 @@ public static void main(String[] args) {
                String count = scanner.nextLine();  // store usage count
                
                updateSkipass(spid, count);
+           }
+           else if (input.strip().equals("6")) {
+        	   System.out.println("What is the ski pass ID?");
+        	   System.out.println();
+               String spid = scanner.nextLine();  // store spid
+               
+               deleteSkipass(spid);
            }
            else {
         	   System.out.println("Invalid option");
