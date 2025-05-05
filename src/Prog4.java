@@ -1033,8 +1033,7 @@ public class Prog4 {
 		
 	}
 	
-	
-public static void main(String[] args) {
+	public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);  // use to get user input
 
         // the string to display to users when they run the program
@@ -1049,6 +1048,8 @@ public static void main(String[] args) {
 		// prompt for operations/queries until termination
         while (true) {
            System.out.println(menuStr);
+           System.out.println();
+           
            String input = scanner.nextLine();  // store user input
            
            if (input.equals("exit")) {
@@ -1081,7 +1082,6 @@ public static void main(String[] args) {
             	   
             	   continue;
                }
-               
                
                System.out.println("What is your phone number?");
         	   System.out.println();
@@ -1158,6 +1158,15 @@ public static void main(String[] args) {
         	   System.out.println();
                String spid = scanner.nextLine();  // store spid
                
+               try {
+                   Integer.parseInt(spid);
+               } catch (NumberFormatException e) {
+            	   System.out.println("Invalid ski pass ID");
+            	   System.out.println();
+            	   
+            	   continue;
+               }
+               
                System.out.println("What do you want to update the number of uses to?");
         	   System.out.println();
                String count = scanner.nextLine();  // store usage count
@@ -1168,6 +1177,15 @@ public static void main(String[] args) {
         	   System.out.println("What is the ski pass ID?");
         	   System.out.println();
                String spid = scanner.nextLine();  // store spid
+               
+               try {
+                   Integer.parseInt(spid);
+               } catch (NumberFormatException e) {
+            	   System.out.println("Invalid ski pass ID");
+            	   System.out.println();
+            	   
+            	   continue;
+               }
                
                deleteSkipass(spid);
            }
