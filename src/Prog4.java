@@ -44,6 +44,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Prog4 {
 		
@@ -594,7 +595,7 @@ public class Prog4 {
     
     Purpose: This method adds a skipass into the database for a certain member.
     The member is identified by their email. The passType is also given, and this
-    will determine the cost of the ski pass. Includes error checking if there is no
+    will help determine the cost of the ski pass. Includes error checking if there is no
     member with the given email
     
     Pre-condition:  None
@@ -691,19 +692,19 @@ public class Prog4 {
 		}
 		
 		try { 
-			// assign costs
+			// assign costs 
 			double cost;
 			if (passType.equals("1-day")) {
-				cost = 99.99;
+				cost = ThreadLocalRandom.current().nextDouble(50.00, 100.00);
 			}
 			else if (passType.equals("2-day")) {
-				cost = 149.99;
+				cost = ThreadLocalRandom.current().nextDouble(120.00, 180.00); 
 			}
 			else if (passType.equals("4-day")) {
-				cost = 215.49;
+				cost = ThreadLocalRandom.current().nextDouble(200.00, 250.00);
 			}
 			else {
-				cost = 499.99;
+				cost = ThreadLocalRandom.current().nextDouble(400.00, 600.00);
 			}
 			
 			String query =     // insertion instructions
@@ -836,8 +837,7 @@ public class Prog4 {
     Method deleteSkipass (spid)
     
     Purpose: This method allows members to delete their ski passes if the 
-    pass is expired, or has no remaining uses (20 uses has been picked for
-    the max amount of uses, since it was not specified). The method utilizes
+    pass is expired, or has no remaining uses. The method utilizes
     a helper method to check if the ski pass can be deleted. The user will
     receive a message if the ski pass cannot be deleted or the ski pass with
     the given spid does not exist.
@@ -940,7 +940,7 @@ public class Prog4 {
     
     Purpose: This method is a helper method for the delete skipass method. It
     determines if a ski pass can be deleted based on if the pass has expired,
-    or still has remaining uses left (20 use max). 
+    or still has remaining uses left. 
     
     Pre-condition:  None
     
@@ -999,9 +999,14 @@ public class Prog4 {
 		Statement stmt = null;
 		
 		try { 
-			String query =   // check if there are any tuples
+			String query =  // check if there are any tuples
 				    "SELECT spid FROM bhousmans.skipass WHERE spid = " + spid + 
-				    " AND notimesused > 20 AND expirydate < SYSDATE";
+				    " AND ( " +
+				    " (passtype = '1-day' AND notimesused >= 1 AND expirydate < SYSDATE) OR " +
+				    " (passtype = '2-day' AND notimesused >= 2 AND expirydate < SYSDATE) OR " +
+				    " (passtype = '4-day' AND notimesused >= 4 AND expirydate < SYSDATE) OR " +
+				    " expirydate < SYSDATE" +
+				    ")";
 	
 	        stmt = dbconn.createStatement();
 	        ResultSet rs = stmt.executeQuery(query);
@@ -1028,9 +1033,367 @@ public class Prog4 {
 		        System.exit(-1);
 		
 		}
-		
 		return false;
+	}
+	
+	/*
+    Method privateOrGroup (dbconn, stmt, scanner, query)
+    
+    Purpose: This method determines whether a person wants their lesson
+             to be with a group or private and which day it will occur.
+             The proper lesson code is returned for an open lesson time
+             or the user will get a message saying that their lesson is
+             not available.
+    
+    Pre-condition:  All objects passed are open and working, query set to 
+                    valid SQL command
+    
+    Post-condition:  The lesson code is returned
+    
+    Parameters:  dbconn - the database connection
+				 stmt - a sql statement object
+				 scanner - a system.in scanner
+				 query - a sting for the query to be executed
+    
+    Returns:  int - retVal which is a lessonCode value
+    */
+	private static int privateOrGroup(Connection dbconn, Statement stmt, Scanner scanner, String query) {
+		int retVal = -999;
+		try {
+			ResultSet rs = null;
+			System.out.println("What day of the week would you like your first lesson to be?");
+	        System.out.println("Enter an integer: Sun=1, Mon=2, Tue=3, Wed=4, Thur=5, Fri=6, Sat=7");
+	 	   	System.out.println();
+	        int lessonCode = Integer.parseInt(scanner.nextLine());
+	        // check that day is valid input
+	        if(lessonCode < 1 || lessonCode > 7) {
+	 	    	while(true) {
+	 	    		System.out.println("Invalid input for lesson\nEnter an integer: Sun=1, Mon=2, Tue=3, Wed=4, Thur=5, Fri=6, Sat=7");
+	         	    System.out.println();
+	         	    lessonCode = Integer.parseInt(scanner.nextLine());
+	 	    	}
+	 	    }
+	        // ask which type of lesson the user wants
+	        System.out.println("Would you like the lesson to be private or with a group? (enter p or g)");
+	    	System.out.println();
+	        String input1 = scanner.nextLine();
+	        if(input1.equals("p")) {
+	        	lessonCode *= -1;
+	        }
+	        // determine if there is a private lesson slot available
+	        if(lessonCode < 0) {
+	        	query = "SELECT * FROM bhousmans.lessonreg WHERE lessonCode = " + lessonCode + " and remainingsessions > 0";
+	        	stmt = dbconn.createStatement();
+				rs = stmt.executeQuery(query);
+				
+				if(rs.next()) {
+					System.out.println("Sorry, the private lesson for this day is already reserved\n");
+				} else {
+					return lessonCode;
+				}
+	        } else {
+	        	// determine if the group class if full
+	        	query = "SELECT count(mid) FROM bhousmans.lessonreg WHERE lessonCode = " + lessonCode + " and remainingsessions > 0";
+	        	stmt = dbconn.createStatement();
+				rs = stmt.executeQuery(query);
+				if(rs.next()) {
+					int count = rs.getInt(1);
+					if(count > 7) {
+						System.out.println("Sorry, the group lesson is full this day\n");
+					} else {
+						return lessonCode;
+					}
+				} else {
+					return lessonCode;
+				}
+				
+	        }
+		} catch (SQLException e) {
+			
+	        System.err.println("*** SQLException:  "
+	            + "Could not open JDBC connection.");
+	        System.err.println("\tMessage:   " + e.getMessage());
+	        System.err.println("\tSQLState:  " + e.getSQLState());
+	        System.err.println("\tErrorCode: " + e.getErrorCode());
+	        System.exit(-1);
+	
+	}
+		return retVal;
+	}
+	
+	/*
+    Method privateOrGroup (input, scanner)
+    
+    Purpose: This method determines whether to add, update, or delete a
+             lesson record from the DB. The input is passed to determine
+             the operation and the scanner allows for the program to gather
+             the necessary info from the user to perform the operation.
+             Adding members is dependent on the MID and lesson code they
+             want. Updating members is dependent on the MID already having
+             registered for a lesson and the lesson code update. Deleting
+             can only occur when no sessions have been used yet.
+    
+    Pre-condition:  Input is 13, 14, or 15. Scanner is open
+    
+    Post-condition:  The operation is performed or user is told that their
+                     input was not valid
+    
+    Parameters:  input - a string that is 13, 14, or 15
+				 scanner - a system.in scanner
+    
+    Returns:  none
+    */
+	private static void lessonRecord(String input, Scanner scanner) {
+		final String oracleURL =   // Magic lectura -> aloe access spell
+                "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+	
 		
+		String username = "gabebarros",    // Oracle DBMS username
+		       password = "a7693";    // Oracle DBMS password
+		
+		    // load the (Oracle) JDBC driver by initializing its base
+		    // class, 'oracle.jdbc.OracleDriver'.
+		
+		try {
+		
+		        Class.forName("oracle.jdbc.OracleDriver");
+		
+		} catch (ClassNotFoundException e) {
+		
+		        System.err.println("*** ClassNotFoundException:  "
+		            + "Error loading Oracle JDBC driver.  \n"
+		            + "\tPerhaps the driver is not on the Classpath?");
+		        System.exit(-1);
+		
+		}
+		Connection dbconn = null;
+		try {
+	        dbconn = DriverManager.getConnection
+	                       (oracleURL,username,password);
+	
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not open JDBC connection.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+		
+		
+		Statement stmt = null;
+		ResultSet rs = null;
+		int orderId = 1;
+		String query = "";
+		boolean runQuery = false;
+		
+		if(input.equals("13")) {
+			System.out.println("You are adding a lesson purchase record. Enter the following information:\n");
+			try { 
+				// query to get the largest orderid in the table
+	            query = "SELECT max(orderid) FROM bhousmans.lessonreg";
+	            stmt = dbconn.createStatement();
+			    rs = stmt.executeQuery(query);
+			    
+			    if (rs.next()) {
+			        orderId = rs.getInt(1) + 1;  
+			    } 
+			    else {
+			        orderId = 1;
+			    }		    
+			} catch (SQLException e) {
+			
+			        System.err.println("*** SQLException:  "
+			            + "Could not fetch query results.");
+			        System.err.println("\tMessage:   " + e.getMessage());
+			        System.err.println("\tSQLState:  " + e.getSQLState());
+			        System.err.println("\tErrorCode: " + e.getErrorCode());
+			        System.exit(-1);
+			
+			}
+			// get necessary fields from the user to create lesson record
+			System.out.println("What is your member ID?");
+     	   	System.out.println();
+            int mid = Integer.parseInt(scanner.nextLine());
+            // determine if the id input is valid
+            query = "SELECT * FROM bhousmans.member WHERE mid = " + mid;
+            try {
+				stmt = dbconn.createStatement();
+				rs = stmt.executeQuery(query);
+				
+				if(rs.next()) {
+					// get the lesson code from the method
+					int pg = privateOrGroup(dbconn, stmt, scanner, query);
+		            
+		            if(pg >= -7) {
+		            	System.out.println("How many sessions would you like to purchase (integer)");
+			     	   	System.out.println();
+			            int numsessions = Integer.parseInt(scanner.nextLine());
+			            
+			            // make the query for the lesson record
+			            query =       // our test query
+			            		"INSERT INTO bhousmans.lessonreg" + " (orderid, lessoncode, mid, numsessions, remainingsessions) " 
+			            		+ "VALUES (" + orderId + "," + pg + ", " + mid + " , " + numsessions + " , " + 
+			            		 + numsessions + ")";
+			            runQuery = true;
+		            }
+		            
+				} else {
+					System.out.println("Enter a valid member ID\n");
+				}
+			} catch (SQLException e) {
+				System.err.println("*** SQLException:  "
+			            + "Could not fetch query results.");
+			        System.err.println("\tMessage:   " + e.getMessage());
+			        System.err.println("\tSQLState:  " + e.getSQLState());
+			        System.err.println("\tErrorCode: " + e.getErrorCode());
+			        System.exit(-1);
+			}
+
+		} else if(input.equals("14")) {
+			System.out.println("You are updating a lesson purchase record. Enter the following information:\n");
+			System.out.println("What is your member ID?");
+     	   	System.out.println();
+            int mid = Integer.parseInt(scanner.nextLine());
+            
+            try { 
+	            query = "SELECT * FROM bhousmans.lessonreg WHERE mid = " + mid;
+	            stmt = dbconn.createStatement();
+			    rs = stmt.executeQuery(query);
+			    // determine of the id input is in the table
+			    if (rs.next()) {
+			        orderId = rs.getInt(1);
+			        int lessonCode = rs.getInt(2);
+			        rs.getInt(3);
+			        rs.getInt(4);
+			        int remainingsessions = rs.getInt(5);
+			        
+			        // check if lessonCode needs to be updated
+			        System.out.println("Would you like to update the lesson code? (enter y or n)");
+		        	System.out.println();
+		            String input1 = scanner.nextLine();
+		            if(input1.equals("y")) {
+		            	lessonCode = privateOrGroup(dbconn, stmt, scanner, query);
+		            	if(lessonCode >= -7) {
+		            		// check if remaining sessions needs to be decreased by 1
+				            System.out.println("Would you like to decrement the remaining sessions by 1? (enter y or n)");
+				        	System.out.println();
+				            input1 = scanner.nextLine();
+				            if(input1.equals("y")) {
+				            	remainingsessions--;
+				            }
+				            query = 
+				            		"UPDATE bhousmans.lessonreg SET lessoncode = " + lessonCode
+				            		+ " , remainingsessions = " + remainingsessions
+				            		+ " WHERE orderid = " + orderId;
+				            runQuery = true;
+		            	}
+		            } else {
+		            	// check if remaining sessions needs to be decreased by 1
+			            System.out.println("Would you like to decrement the remaining sessions by 1? (enter y or n)");
+			        	System.out.println();
+			            input1 = scanner.nextLine();
+			            if(input1.equals("y")) {
+			            	remainingsessions--;
+			            }
+			            query = 
+			            		"UPDATE bhousmans.lessonreg SET lessoncode = " + lessonCode
+			            		+ " , remainingsessions = " + remainingsessions
+			            		+ " WHERE orderid = " + orderId;
+			            runQuery = true;
+		            }
+		            
+			    }
+			    else {
+			        System.out.println("The member ID that you entered is not in our records. Try another ID\n");
+			    }		    
+			} catch (SQLException e) {
+			
+			        System.err.println("*** SQLException:  "
+			            + "Could not fetch query results.");
+			        System.err.println("\tMessage:   " + e.getMessage());
+			        System.err.println("\tSQLState:  " + e.getSQLState());
+			        System.err.println("\tErrorCode: " + e.getErrorCode());
+			        System.exit(-1);
+			
+			}
+            
+		} else {
+			System.out.println("You are deleting a lesson purchase record. Enter the following information:\n");
+			System.out.println("What is your member ID?");
+     	   	System.out.println();
+            int mid = Integer.parseInt(scanner.nextLine());
+            
+            try { 
+	            query = "SELECT * FROM bhousmans.lessonreg WHERE mid = " + mid;
+	            stmt = dbconn.createStatement();
+			    rs = stmt.executeQuery(query);
+			    
+			    if (rs.next()) {
+			        orderId = rs.getInt(1);
+			        rs.getInt(2);
+			        rs.getInt(3);
+			        int numsessions = rs.getInt(4);
+			        int remainingsessions = rs.getInt(5);
+			        // we can only delete the record if the session bought == num remaining
+			        if(numsessions == remainingsessions) {
+			        	query = 
+			            		"DELETE FROM bhousmans.lessonreg "
+			            		+ " WHERE orderid = " + orderId;
+			            runQuery = true;
+			        } else {
+			        	System.out.println("Sorry, this record can not be deleted because"
+			        			+ " at least one session from the purchase has been used\n");
+			        }
+			    }
+			    else {
+			        System.out.println("The member ID that you entered is not in our records. Try another ID\n");
+			    }		    
+			} catch (SQLException e) {
+			
+			        System.err.println("*** SQLException:  "
+			            + "Could not fetch query results.");
+			        System.err.println("\tMessage:   " + e.getMessage());
+			        System.err.println("\tSQLState:  " + e.getSQLState());
+			        System.err.println("\tErrorCode: " + e.getErrorCode());
+			        System.exit(-1);
+			
+			}
+		}
+		// execute the query string if the user input meets the necessary conditions
+		if(runQuery) {
+			try { 
+
+	            stmt = dbconn.createStatement();
+			    stmt.executeUpdate(query);
+		            
+	            System.out.println("lesson record action completed\n");
+			
+			} catch (SQLException e) {
+			
+			        System.err.println("*** SQLException:  "
+			            + "Could not fetch query results.");
+			        System.err.println("\tMessage:   " + e.getMessage());
+			        System.err.println("\tSQLState:  " + e.getSQLState());
+			        System.err.println("\tErrorCode: " + e.getErrorCode());
+			        System.exit(-1);
+			
+			}
+		}
+		
+		try {
+			stmt.close();
+			dbconn.close();
+		} catch (SQLException e) {
+			System.err.println("*** SQLException:  "
+		            + "Could not fetch query results.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		}  
 	}
 	
 	private static void editEInvRecord(Scanner scanner) {
@@ -2239,18 +2602,65 @@ public class Prog4 {
 	}
 	
 	public static void main(String[] args) {
+		final String oracleURL =   // Magic lectura -> aloe access spell
+                "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+	
+		
+		String username = "gabebarros",    // Oracle DBMS username
+		       password = "a7693";    // Oracle DBMS password
+		
+		    // load the (Oracle) JDBC driver by initializing its base
+		    // class, 'oracle.jdbc.OracleDriver'.
+		
+		try {
+		
+		        Class.forName("oracle.jdbc.OracleDriver");
+		
+		} catch (ClassNotFoundException e) {
+		
+		        System.err.println("*** ClassNotFoundException:  "
+		            + "Error loading Oracle JDBC driver.  \n"
+		            + "\tPerhaps the driver is not on the Classpath?");
+		        System.exit(-1);
+		
+		}
+		
+		    // make and return a database connection to the user's
+		    // Oracle database
+		
+		Connection dbconn = null;
+		
+		try {
+		        dbconn = DriverManager.getConnection
+		                       (oracleURL,username,password);
+		
+		} catch (SQLException e) {
+		
+		        System.err.println("*** SQLException:  "
+		            + "Could not open JDBC connection.");
+		        System.err.println("\tMessage:   " + e.getMessage());
+		        System.err.println("\tSQLState:  " + e.getSQLState());
+		        System.err.println("\tErrorCode: " + e.getErrorCode());
+		        System.exit(-1);
+		
+		}
+
+		
 		Scanner scanner = new Scanner(System.in);  // use to get user input
 
         // the string to display to users when they run the program
         String menuStr = "Options: \n"
-				+ "1 - Add Member \n"
-        		+ "2 - Update Member \n"
+				+ "1 - Add Member\n"
+				+ "2 - Update Member \n"
         		+ "3 - Delete Member \n"
         		+ "4 - Add a ski pass \n"
         		+ "5 - Update ski pass \n"
         		+ "6 - Delete a ski pass\n"
         		+ "7 - Add, update, or delete an equipment inventory record\n"
         		+ "8 - Add, update, or delete an equipment rental record\n";
+        		+ "13 - Add Lesson Purchase Record\n"
+				+ "14 - Update Lesson Purchase Record\n"
+        		+ "15 - Delete Lesson Purchase Record\n 20 - Query Information\n";
 				
 		// prompt for operations/queries until termination
         while (true) {
@@ -2402,6 +2812,11 @@ public class Prog4 {
            else if (input.strip().equals("8")) {
         	   editERentRecord(scanner);
            }
+           else if (input.strip().equals("13") || (input.strip().equals("14")) || (input.strip().equals("15"))) {
+        	   lessonRecord(input.strip(), scanner);          
+           } else if (input.strip().equals("20")) {
+		askQueryInfo(scanner, dbconn);
+	   }
            else {
         	   System.out.println("Invalid option");
         	   System.out.println();
@@ -2411,5 +2826,322 @@ public class Prog4 {
 
        scanner.close();
 
+	}
+
+	private static void askQueryInfo(Scanner input, Connection dbconn) {
+		System.out.println("Here is a list of queries that can be made. Please enter the number corresponding to the query to select it!");
+		System.out.println();
+		System.out.println("1. For a given member, list all the ski lessons they have purchased, including the number of remaining\r\n"
+				+ "sessions, instructor name, and scheduled time");
+		System.out.println();
+		System.out.println("2. For a given ski pass, list all lift rides and equipment rentals associated with it, along with timestamps\r\n"
+				+ "and return status.");
+		System.out.println();
+		System.out.println("3. List all open trails suitable for intermediate-level skiers, along with their category and connected lifts\r\n"
+				+ "that are currently operational.");
+		System.out.println();
+		System.out.println("4. For a given lift, see what trails you can access, and whether they are active or not!");
+		String choiceStr = input.nextLine();
+		int choice;
+		try {
+			choice = Integer.parseInt(choiceStr);
+		} catch (NumberFormatException e) {
+			System.out.println("Invalid input - please enter a number between 1 - 4!");
+			return;
+		}
+		if (choice == 1) {
+			System.out.print("Please enter a valid member id: ");
+			String mid = input.nextLine();
+			getSkiLesson(dbconn, mid);
+		} else if (choice == 2) {
+			System.out.print("Please enter a valid ski pass id: ");
+			String spid = input.nextLine();
+			getSkiPassInfo(dbconn, spid);
+		} else if (choice == 3) {
+			getOpenTrails(dbconn);
+		} else if (choice == 4) {
+			System.out.print("Please enter a valid skilift name: ");
+			String theInfo = input.nextLine();
+			getTrivial(dbconn, theInfo);
+		} else {
+			System.out.println("Invalid input - please enter a number between 1 - 4!");
+		}
+		
+	}
+	
+	private static void getSkiLesson(Connection dbconn, String member) {
+		// bhousmans.member -> bhousmans.lessonreg (list of skilessons (orderid, lessoncode), remainingsessions) -> bhousmans.lesson (schedule) -> bhousmans.employee (firstname, lastname)          
+		int mid;
+		try {
+			mid = Integer.parseInt(member);
+		} catch (NumberFormatException e) {
+			System.out.println("Invalid memberID entered. Please enter a valid member ID.");
+			return;
+		}
+		
+		String query = "SELECT count(*) from bhousmans.member where mid = " + mid;
+		ResultSet answer = null;
+		Statement stmt = null;
+		try {
+			stmt = dbconn.createStatement();
+			answer = stmt.executeQuery(query);
+			if (answer.next()) {
+				if (answer.getInt(1) == 0) {
+					System.out.println("Invalid memberID entered. Please enter a valid member ID.");
+					return;
+				}
+			} else {throw new SQLException();}
+			
+			query = "select lg.orderid, lg.lessoncode, lg.remainingsessions, l.schedule, e.firstname, e.lastname "
+					+ "from bhousmans.lessonreg lg join bhousmans.lesson l on lg.lessoncode = l.lessoncode "
+					+ "left join bhousmans.employee e on l.eid = e.eid where lg.mid = " + mid;
+			answer = stmt.executeQuery(query);
+			int empty = 1;
+			System.out.println("ORDERID\tLESSON\tSCHEDULE\tSESSIONS_REMAINING\tINSTRUCTOR");
+			System.out.println("---------------------------------------");
+			while (answer.next()) {
+				empty--;
+			    int orderId = answer.getInt("orderid");
+			    int lessonCode = answer.getInt("lessoncode"); // would be better for lesson code to be String
+			    int remainingSessions = answer.getInt("remainingsessions");
+			    String schedule = answer.getString("schedule");
+			    String firstName = answer.getString("firstname");
+			    String lastName = answer.getString("lastname");
+
+			    System.out.print(orderId + "\t");
+			    System.out.print(lessonCode + "\t");
+			    System.out.print(schedule + "\t");
+			    System.out.print(remainingSessions + "\t");
+			    System.out.print(firstName + " " + lastName + "\n");
+			    
+			}
+			if (empty == 1) {
+				System.out.println("Given member " + member + " doesn't have any purchased ski lessons.");
+				return;
+			}
+			
+			
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+		}	
+		
+	}
+	
+	
+	private static void getSkiPassInfo(Connection dbconn, String spid) {
+		// bhousmans.skipass -> bhousmans.liftuse (nouses) -> bhousmans.lift (lname, status)
+		// bhousmans.skipass -> bhousmans.equiprental (datefrom, dateto) -> bhousmans.equipment (equiptype, slength, inUse)
+	
+		int sid;
+		try {
+			sid = Integer.parseInt(spid);
+		} catch (NumberFormatException e) {
+			System.out.println("Invalid memberID entered. Please enter a valid member ID.");
+			return;
+		}
+		
+		String query = "SELECT count(*) from bhousmans.skipass where mid = " + sid;
+		ResultSet answer = null;
+		Statement stmt = null;
+		try {
+			stmt = dbconn.createStatement();
+			answer = stmt.executeQuery(query);
+			if (answer.next()) {
+				if (answer.getInt(1) == 0) {
+					System.out.println("Invalid skipass number entered. Please enter a valid skipass ID.");
+					return;
+				}
+			} else {throw new SQLException();}
+			
+			query = "select lu.nouses, l.lname, l.status from bhousmans.liftuse lu "
+					+ "join bhousmans.lift l on l.lname = lu.lname where lu.spid = " + spid; // liftuse should have a timestamp value
+			answer = stmt.executeQuery(query);
+			System.out.println("LIFT_NAME\tTIMES_USED\tSTATUS");
+			System.out.println("---------------------------------------");
+			int empty = 1;
+			while (answer.next()) {
+				empty--;
+				int uses = answer.getInt("nouses");
+				String lname = answer.getString("lname");
+				int status = answer.getInt("status");
+				System.out.print(lname + "\t");
+				System.out.print(uses + "\t");
+				if (status == 1) {System.out.print("ACTIVE\n");}
+				else {System.out.print("INACTIVE\n");}
+				
+			}
+			if (empty == 1) {
+				System.out.println("Given ski pass " + spid + " hasn't used the lift.");
+			}
+			empty = 1;
+			query = "select er.rentalid, er.datefrom, er.dateto, eq.equiptype, eq.slength from bhousmans.equiprental er "
+					+ "join bhousmans.equipment eq on er.equipid = eq.equipid where er.spid = " + spid;
+			answer = stmt.executeQuery(query);
+			System.out.println("RENTAL ID\tEQUIPMENT\tSIZE\tDATE_BORROWED\tRETURN_BY");
+			System.out.println("---------------------------------------");
+			while (answer.next()) {
+				empty--;
+				int rid = answer.getInt("rentalid");
+			    Date dateFrom = answer.getDate("datefrom");
+			    Date dateTo = answer.getDate("dateto");
+			    String equipment = answer.getString("equiptype");
+			    int size = answer.getInt("slength");
+			    System.out.print(rid + "\t");
+			    System.out.print(equipment + "\t");
+			    if (equipment.toLowerCase().equals("boots")) {System.out.print(((float) size / 10)+"\t");}
+			    else {System.out.print(size + "\t");}
+			    System.out.print(dateFrom + "\t");
+			    System.out.print(dateTo + "\n");
+			    // might need field for due
+			}
+			if (empty == 1) {
+				System.out.println("Given ski pass " + spid + " hasn't borrowed any equipment.");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	
+	
+	
+	
+	}
+	
+	private static class trailInfo {
+		public int start, end;
+		public String tname, category;
+		public ArrayList<String> lname;
+		
+		public trailInfo(int s, int e, String t, String c) {
+			start = s;
+			end = e;
+			tname = t;
+			category = c;
+			lname = new ArrayList<String>();
+		}
+		
+		public void addLift(String l) {
+			lname.add(l);
+		}
+	}
+	
+	private static void getOpenTrails(Connection dbconn) {
+		// bhousmans.trail (where difficulty = intermediate & status = 1) (tname, startloc, endloc, category) ->
+		// bhousmans.lifttrailconn -> bhousmans.lift (lname) where status = 1
+		String query = "select t.tname, t.startloc, t.endloc, t.category, l.lname, l.status from bhousmans.trail t left join bhousmans.lifttrailconn lt"
+				+ " on t.tname = lt.tname left join bhousmans.lift l on l.lname = lt.lname "
+				+ "where t.status = 1 and t.difficulty = 'Intermediate'";
+		Statement stmt;
+		HashMap<String, trailInfo> map = new HashMap<>();
+		try {
+			stmt = dbconn.createStatement();
+			ResultSet answer = stmt.executeQuery(query);
+			int empty = 1;
+			System.out.println("TRAIL\tSTART_LOCATION\tEND_LOCATION\tCATEGORY\tLIFT_ACCESSED_BY");
+			System.out.println("---------------------------------------");
+			while (answer.next()) {
+				empty--;
+				String tname = answer.getString("tname");
+				String lname = answer.getString("lname");
+				int start = answer.getInt("startloc");
+				int end = answer.getInt("endloc");
+				String cat = answer.getString("category");
+				Integer status = answer.getObject("status", Integer.class);
+				if (map.containsKey(tname)) {
+					if (status != null && status.equals(1)) {
+						map.get(tname).addLift(lname);
+					}
+				} else {
+					trailInfo t = new trailInfo(start, end, tname, cat);
+					map.put(tname, t);
+					if (status != null && status.equals(1)) {
+						t.addLift(lname);
+					}
+				}
+			}
+			if (empty == 1) {
+				System.out.println("There are no active intermediate trails right now.");
+				return;
+			}
+			
+			for (Map.Entry<String, trailInfo> entry : map.entrySet()) {
+				trailInfo t = entry.getValue();
+				System.out.print(t.tname + "\t");
+				System.out.print(t.start + "\t");
+				System.out.print(t.end + "\t");
+				System.out.print(t.category + "\t");
+				int first = 0;
+				for (String lname : t.lname) {
+					if (first == 0) {System.out.print(lname + "\n");}
+					else {System.out.print("\t\t\t\t" + lname + "\n");}
+					first--;
+					
+				}
+				System.out.println();
+				
+			}
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
+	private static void getTrivial(Connection dbconn, String lname) {
+		// given a lift , list out all connected lifts/trails, their timings, status, and start end loc
+		// bhousmans.lift -> lifttrailconn -> trail (tname, startloc, endloc, difficulty, category, status)
+		String query = "SELECT count(*) from bhousmans.lift where lname = '" + lname + "'";
+		ResultSet answer = null;
+		Statement stmt = null;
+		try {
+			stmt = dbconn.createStatement();
+			answer = stmt.executeQuery(query);
+			if (answer.next()) {
+				if (answer.getInt(1) == 0) {
+					System.out.println("Lift doesn't exist. Please enter a valid skilift.");
+					return;
+				}
+			} else {throw new SQLException();}
+			
+			query = "select l.opentime, l.closetime, l.status, t.tname, t.difficulty, t.category, t.status as tstat, t.startloc, t.endloc "
+					+ "from bhousmans.lift l join bhousmans.lifttrailconn lt on l.lname = lt.lname "
+					+ "join bhousmans.trail t on lt.tname = t.tname where UPPER(l.lname) = UPPER('" + lname + "')";
+			answer = stmt.executeQuery(query);
+			int empty = 1;
+			while (answer.next()) {
+				if (empty == 1) {
+					int open = answer.getInt("opentime");
+					int close = answer.getInt("closetime");
+					int stat = answer.getInt("status");
+					String statStr;
+					if (stat == 1) {statStr = "ACTIVE";}
+					else {statStr = "INACTIVE";}
+					System.out.println("The chosed lift " + lname + " opens at " + open + " and closes at " + close + " and has the status " + statStr + "." );
+					System.out.println("TRAIL\tSTART LOCATION\tEND LOCATION\tCATEGORY\tDIFFICULTY\tSTATUS");
+					System.out.println("---------------------------------------");
+				}
+				empty--;
+				String tname = answer.getString("tname");
+				String cat = answer.getString("category");
+				String diff = answer.getString("difficulty");
+				int status = answer.getInt("tstat");
+				int start = answer.getInt("startloc");
+				int end = answer.getInt("endloc");
+				System.out.print(tname + "\t");
+				System.out.print(start + "\t");
+				System.out.print(end + "\t");
+				System.out.print(cat + "\t");
+				System.out.print(diff + "\t");
+				if (status == 1) {System.out.print("ACTIVE\n");}
+				else {System.out.print("INACTIVE\n");}
+			}
+			if (empty == 1) {
+				System.out.println("This lift doesn't currently service any trails.");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 }
