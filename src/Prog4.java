@@ -1033,7 +1033,7 @@ public class Prog4 {
 		
 	}
 	
-private static void editEInvRecord(Scanner scanner) {
+	private static void editEInvRecord(Scanner scanner) {
 		
 		String menuStr = "What would you like to do?\n"
 				+ "1 - Add Equipment Inventory Record\n"
@@ -1370,7 +1370,7 @@ private static void editEInvRecord(Scanner scanner) {
 						
 						System.out.println("Is this the Equipment you wish to update?\n"
 								+ "A new EQUIPID will be assigned and the previous EQUIPID will be retired!\n"
-								+ "y - continue\n"
+								+ "y - Continue\n"
 								+ "n - Enter a new Equipment ID\n");
 						
 						String input;
@@ -1515,11 +1515,11 @@ private static void editEInvRecord(Scanner scanner) {
 						String tuple = String.format("%10s ", result.getInt("EQUIPID"));
 						tuple += String.format("%-20s ", result.getString("EQUIPTYPE"));
 						tuple += String.format("%10s ", result.getInt("SLENGTH"));
-						tuple += String.format("%10s ", result.getInt("INUSE"));
+						tuple += String.format("%10s", result.getInt("INUSE"));
 						System.out.println(tuple);
 						
 						System.out.println("Is this the Equipment you wish to delete?\n"
-								+ "y - continue\n"
+								+ "y - Continue\n"
 								+ "n - Enter a new Equipment ID\n");
 						
 						String input;
@@ -1567,6 +1567,677 @@ private static void editEInvRecord(Scanner scanner) {
 		}
 	}
 	
+	private static void editERentRecord(Scanner scanner) {
+		
+		String menuStr = "What would you like to do?\n"
+				+ "1 - Add Equipment Rental Record\n"
+				+ "2 - Update Equipment Rental Record\n"
+				+ "3 - Delete Equipment Rental Record\n"
+				+ "4 - Return to main menu\n";
+		
+		String input;
+		
+		while (true) {
+			System.out.println(menuStr);
+			input = scanner.nextLine();  // store user input
+			
+			if (input.strip().equals("1")) {
+				addERentRecord(scanner);
+				return;
+			}
+			
+			if (input.strip().equals("2")) {
+				updateERentRecord(scanner);
+				return;
+			}
+			
+			if (input.strip().equals("3")) {
+				deleteERentRecord(scanner);
+				return;
+			}
+			
+			if (input.strip().equals("4")) {
+				return;
+			}
+			
+			System.out.println("Invalid option\n");
+		}
+	}
+	
+	private static void addERentRecord(Scanner scanner) {
+		
+		// Magic lectura -> aloe access spell
+		String oracleURL = "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+		// Will hold a database connection to the hard-coded Oracle database
+		Connection dbconn = null;
+
+		// Hard-coded Oracle login data for ease of access and lack of sensitive
+		// information
+		String username = "dylanacarothers";
+		String password = "a5382";
+				
+		// Load the (Oracle) JDBC driver by initializing its base class
+		try {
+			Class.forName("oracle.jdbc.OracleDriver");
+		} catch (ClassNotFoundException e) {
+			System.err.println("*** ClassNotFoundException: Error loading Oracle JDBC driver.");
+			System.err.println("\tPerhaps the driver is not on the Classpath?");
+			System.exit(-1);
+		}
+
+		// Make and return a database connection to the Oracle database
+		try {
+			dbconn = DriverManager.getConnection(oracleURL, username, password);
+		} catch (SQLException e) {
+			System.err.println("*** SQLException: Could not open JDBC connection.");
+			System.err.println("\tMessage:   " + e.getMessage());
+			System.err.println("\tSQLState:  " + e.getSQLState());
+			System.err.println("\tErrorCode: " + e.getErrorCode());
+			System.exit(-1);
+		}
+				
+		Statement stmt = null;
+		String query = null;
+		ResultSet result = null;
+		int rentalId = -1;
+				
+		try {
+			query = "SELECT max(rentalid) FROM bhousmans.equiprental";
+			stmt = dbconn.createStatement();
+			result = stmt.executeQuery(query);
+			
+			if (result.next()) {
+				rentalId = result.getInt(1) + 1;
+			} else {
+				rentalId = 1;
+			}
+			
+			stmt.close();
+			
+		} catch (SQLException e) {
+			System.err.println("*** SQLException: Could not fetch query results.");
+			System.err.println("\tMessage:   " + e.getMessage());
+			System.err.println("\tSQLState:  " + e.getSQLState());
+			System.err.println("\tErrorCode: " + e.getErrorCode());
+			System.exit(-1);
+		}
+		
+		String prompt = "What is the Ski Pass ID you wish to rent from?\n"
+				+ "Enter '-1' to cancel\n";
+		int spId = -1;
+		boolean continuePrompt = true;
+		
+		while (continuePrompt) {
+			System.out.println(prompt);
+				
+			spId = scanner.nextInt();
+			scanner.nextLine();
+			
+			if (spId == -1) {
+				try {
+					dbconn.close();
+				} catch (SQLException e) {
+					System.err.println("*** SQLException: Could not fetch query results.");
+					System.err.println("\tMessage:   " + e.getMessage());
+					System.err.println("\tSQLState:  " + e.getSQLState());
+					System.err.println("\tErrorCode: " + e.getErrorCode());
+					System.exit(-1);
+				}	
+				return;
+			}
+			
+			query = "SELECT * FROM bhousmans.skipass WHERE SPID = ";
+			query += spId;
+			
+			try {
+				
+				stmt = dbconn.createStatement();
+				result = stmt.executeQuery(query);
+				
+				if (result.next()) {
+					
+					stmt.close();
+					stmt = dbconn.createStatement();
+					
+					query += " AND EXPIRYDATE > SYSDATE";
+					
+					result = stmt.executeQuery(query);
+					
+					if (result.next()) {
+						
+						System.out.println("      SPID        MID PASSTYPE EXPIRYDATE NOTIMESUSED       COST");
+						System.out.println("---------- ---------- -------- ---------- ----------- ----------");
+	
+						// Use next() to advance cursor through the result tuples and
+						// print their attribute values
+						String tuple = String.format("%10s ", result.getInt("SPID"));
+						tuple += String.format("%10s ", result.getInt("MID"));
+						tuple += String.format("%8s ", result.getString("PASSTYPE"));
+						tuple += String.format("%10s ", result.getString("EXPIRYDATE").substring(0, 11));
+						tuple += String.format("%10s ", result.getInt("NOTIMESUSED"));
+						tuple += String.format("%10s", result.getString("COST"));
+						System.out.println(tuple);
+												
+						System.out.println("Is this the Ski Pass you wish to use?\n"
+								+ "y - Continue\n"
+								+ "n - Enter a new Ski Pass ID\n");
+						
+						String input;
+						
+						while (true) {
+							input = scanner.nextLine();  // store user input
+							
+							if (input.strip().equals("y")) {
+								continuePrompt = false;
+								break;
+							}
+							
+							if (input.strip().equals("n")) {
+								break;
+							}
+							
+							System.out.println("Invalid option\n");
+						}
+					} else {
+						System.out.println("\nError: Sorry the entered Ski Pass is expired!\n");
+					}
+				} else {
+					System.out.println("\nError: No record found with that Ski Pass ID!\n");
+				}
+				
+				stmt.close();
+				
+			} catch (SQLException e) {
+				System.err.println("*** SQLException: Could not fetch query results.");
+				System.err.println("\tMessage:   " + e.getMessage());
+				System.err.println("\tSQLState:  " + e.getSQLState());
+				System.err.println("\tErrorCode: " + e.getErrorCode());
+				System.exit(-1);
+			}	
+		}
+		
+		prompt = "What is the equipment ID of the item you wish to rent?\n"
+				+ "Enter '-1' to cancel\n";
+		int equipId = -1;
+		
+		continuePrompt = true;
+		
+		while (continuePrompt) {
+			System.out.println(prompt);
+				
+			equipId = scanner.nextInt();
+			scanner.nextLine();
+			
+			if (equipId == -1) {
+				try {
+					dbconn.close();
+				} catch (SQLException e) {
+					System.err.println("*** SQLException: Could not fetch query results.");
+					System.err.println("\tMessage:   " + e.getMessage());
+					System.err.println("\tSQLState:  " + e.getSQLState());
+					System.err.println("\tErrorCode: " + e.getErrorCode());
+					System.exit(-1);
+				}	
+				return;
+			}
+			
+			query = "SELECT * FROM bhousmans.equipment WHERE EQUIPID = ";
+			query += equipId;
+			
+			try {
+				
+				stmt = dbconn.createStatement();
+				result = stmt.executeQuery(query);
+				
+				if (result.next()) {
+					
+					if (result.getInt("INUSE") == 1) {
+						System.out.println("Equipment '" + equipId + "' is currently rented!\n"
+								+ "Cannot rent an item currently in use!\n");
+					} else if (result.getInt("INUSE") < 0) {
+						System.out.println("Equipment '" + equipId + "' has already been retired!\n"
+								+ "Retired equipment cannot be rented!\n");
+					} else {
+
+						System.out.println("   EQUIPID EQUIPTYPE               SLENGTH      INUSE");
+						System.out.println("---------- -------------------- ---------- ----------");
+	
+						// Use next() to advance cursor through the result tuples and
+						// print their attribute values
+						String tuple = String.format("%10s ", result.getInt("EQUIPID"));
+						tuple += String.format("%-20s ", result.getString("EQUIPTYPE"));
+						tuple += String.format("%10s ", result.getInt("SLENGTH"));
+						tuple += String.format("%10s", result.getInt("INUSE"));
+						System.out.println(tuple);
+						
+						System.out.println("Is this the Equipment you wish to rent?\n"
+								+ "y - Continue\n"
+								+ "n - Enter a new Equipment ID\n");
+						
+						String input;
+						
+						while (true) {
+							input = scanner.nextLine();  // store user input
+							
+							if (input.strip().equals("y")) {								
+								continuePrompt = false;
+								break;
+								
+							}
+							
+							if (input.strip().equals("n")) {
+								break;
+							}
+							
+							System.out.println("Invalid option\n");
+						}
+					}
+				} else {
+					System.out.println("\nError: No record found with that equipment ID!");
+				}
+				
+				stmt.close();
+				
+			} catch (SQLException e) {
+				System.err.println("*** SQLException: Could not fetch query results.");
+				System.err.println("\tMessage:   " + e.getMessage());
+				System.err.println("\tSQLState:  " + e.getSQLState());
+				System.err.println("\tErrorCode: " + e.getErrorCode());
+				System.exit(-1);
+			}	
+		}
+		
+		int maxDays = 0;
+		int rentalDays = 0;
+		
+		try {
+			query = "SELECT (EXPIRYDATE - SYSDATE) FROM bhousmans.skipass WHERE SPID = " + spId;
+			stmt = dbconn.createStatement();
+			result = stmt.executeQuery(query);
+			
+			result.next();
+			maxDays = result.getInt(1) + 1;
+			stmt.close();
+			
+		} catch (SQLException e) {
+			System.err.println("*** SQLException: Could not fetch query results.");
+			System.err.println("\tMessage:   " + e.getMessage());
+			System.err.println("\tSQLState:  " + e.getSQLState());
+			System.err.println("\tErrorCode: " + e.getErrorCode());
+			System.exit(-1);
+		}
+		
+		if (maxDays < 1) {
+			prompt = "Ski Pass expires today!\n"
+					+ "Equipment can only be rented for 1 day\n"
+					+ "would you like to continue?\n"
+					+ "y - Continue\n"
+					+ "n - Exit to main menu\n";
+			rentalDays = 1;
+		} else {
+			if (maxDays > 3) {
+				maxDays = 3;
+			}
+			prompt = "How many days would you like to rent the Equipment?\n"
+					+ "Equipment can be rented for 3 days or until the Ski Pass expires "
+					+ "(whichever comes first)\n"
+					+ "Your range is 1 - " + maxDays + " (inclusive)\n"
+					+ "y - Continue\n"
+					+ "n - Exit to main menu\n";
+			
+			while (true) {
+				System.out.println(prompt);
+				
+				rentalDays = scanner.nextInt();
+				scanner.nextLine();
+				
+				if (rentalDays < 1 || rentalDays > maxDays) {
+					System.out.println("Invalid number of days\n");
+				} else {
+					break;
+				}
+			}
+			
+			prompt = "Equipment will be rented for " + rentalDays + " day(s)\n"
+					+ "would you like to continue?\n"
+					+ "y - Continue\n"
+					+ "n - Exit to main menu\n";
+		}
+		
+		String input;
+		
+		while (true) {
+			System.out.println(prompt);
+			input = scanner.nextLine();  // store user input
+			
+			if (input.strip().equals("y")) {
+				query = "INSERT INTO bhousmans.equiprental VALUES( " + rentalId + ", "
+						+ equipId + ", " + spId + ", SYSDATE, (SYSDATE + " + rentalDays
+						+ "), 1)";
+				
+				try {
+					stmt = dbconn.createStatement();
+					stmt.executeUpdate(query);
+					stmt.close();
+					
+					query = "UPDATE bhousmans.equipment SET INUSE = 1 WHERE EQUIPID = " + equipId;
+					stmt = dbconn.createStatement();
+					stmt.executeUpdate(query);
+					
+					System.out.println("Equipment Rental Record added sucessfully!");
+
+					// Shut down the connection to the DBMS.
+					stmt.close();
+					dbconn.close();
+
+				} catch (SQLException e) {
+					System.err.println("*** SQLException: Could not fetch query results.");
+					System.err.println("\tMessage:   " + e.getMessage());
+					System.err.println("\tSQLState:  " + e.getSQLState());
+					System.err.println("\tErrorCode: " + e.getErrorCode());			
+					System.exit(-1);
+				}
+				break;
+			}
+			
+			if (input.strip().equals("n")) {
+				break;
+			}
+			
+			System.out.println("Invalid option\n");
+		}
+		
+		try {
+			dbconn.close();
+		} catch (SQLException e) {
+			System.err.println("*** SQLException: Could not fetch query results.");
+			System.err.println("\tMessage:   " + e.getMessage());
+			System.err.println("\tSQLState:  " + e.getSQLState());
+			System.err.println("\tErrorCode: " + e.getErrorCode());
+			System.exit(-1);
+		}	
+		return;
+		
+	}
+	
+	private static void updateERentRecord(Scanner scanner) {
+		
+		// Magic lectura -> aloe access spell
+		String oracleURL = "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+		// Will hold a database connection to the hard-coded Oracle database
+		Connection dbconn = null;
+
+		// Hard-coded Oracle login data for ease of access and lack of sensitive
+		// information
+		String username = "dylanacarothers";
+		String password = "a5382";
+				
+		// Load the (Oracle) JDBC driver by initializing its base class
+		try {
+			Class.forName("oracle.jdbc.OracleDriver");
+		} catch (ClassNotFoundException e) {
+			System.err.println("*** ClassNotFoundException: Error loading Oracle JDBC driver.");
+			System.err.println("\tPerhaps the driver is not on the Classpath?");
+			System.exit(-1);
+		}
+
+		// Make and return a database connection to the Oracle database
+		try {
+			dbconn = DriverManager.getConnection(oracleURL, username, password);
+		} catch (SQLException e) {
+			System.err.println("*** SQLException: Could not open JDBC connection.");
+			System.err.println("\tMessage:   " + e.getMessage());
+			System.err.println("\tSQLState:  " + e.getSQLState());
+			System.err.println("\tErrorCode: " + e.getErrorCode());
+			System.exit(-1);
+		}
+		
+		Statement stmt = null;
+		String query;
+		ResultSet result = null;
+		String prompt = "What is the rental ID you wish to update?\n"
+				+ "Enter '-1' to cancel\n";
+		int rentalId = -1;
+		int equipId;
+		
+		while (true) {
+			System.out.println(prompt);
+				
+			rentalId = scanner.nextInt();
+			scanner.nextLine();
+			
+			if (rentalId == -1) {
+				try {
+					dbconn.close();
+				} catch (SQLException e) {
+					System.err.println("*** SQLException: Could not fetch query results.");
+					System.err.println("\tMessage:   " + e.getMessage());
+					System.err.println("\tSQLState:  " + e.getSQLState());
+					System.err.println("\tErrorCode: " + e.getErrorCode());
+					System.exit(-1);
+				}	
+				return;
+			}
+			
+			query = "SELECT * FROM bhousmans.equiprental WHERE RENTALID = ";
+			query += rentalId;
+			
+			try {
+				
+				stmt = dbconn.createStatement();
+				result = stmt.executeQuery(query);
+				
+				if (result.next()) {
+					
+					if (result.getInt("RETURNSTATUS") == 0) {
+						System.out.println("Rental log '" + rentalId + "' has already been marked as returned!\n");
+					} else if (result.getInt("RETURNSTATUS") < 0) {
+						System.out.println("Rental log '" + rentalId + "' has already been marked as deleted!\n");
+					} else {
+
+						System.out.println("  RENTALID    EQUIPID       SPID   DATEFROM     DATETO RETURNSTATUS");
+						System.out.println("---------- ---------- ---------- ---------- ---------- ------------");
+	
+						// Use next() to advance cursor through the result tuples and
+						// print their attribute values
+						String tuple = String.format("%10s ", result.getInt("RENTALID"));
+						equipId = result.getInt("EQUIPID");
+						tuple += String.format("%10s ", equipId);
+						tuple += String.format("%10s ", result.getInt("SPID"));
+						tuple += String.format("%10s ", result.getString("DATEFROM").substring(0, 10));
+						tuple += String.format("%10s ", result.getString("DATETO").substring(0, 10));
+						tuple += String.format("%12s", result.getInt("RETURNSTATUS"));
+						System.out.println(tuple);
+						
+						System.out.println("Is this the Equipment Rental you wish to update?\n"
+								+ "y - Continue\n"
+								+ "n - Enter a new Equipment ID\n");
+						
+						String input;
+						
+						while (true) {
+							input = scanner.nextLine();  // store user input
+							
+							if (input.strip().equals("y")) {
+								stmt.close();
+								
+								stmt = dbconn.createStatement();
+								query = "UPDATE bhousmans.equipment SET INUSE = 0 WHERE EQUIPID = " + equipId;
+								stmt.executeUpdate(query);
+								
+								stmt.close();
+								stmt = dbconn.createStatement();
+								query = "UPDATE bhousmans.equiprental SET RETURNSTATUS = 0 WHERE RENTALID = " + rentalId;
+								stmt.executeUpdate(query);
+								
+								System.out.println("Update completed sucessfully!\n");
+
+								// Shut down the connection to the DBMS.
+								stmt.close();
+								dbconn.close();
+								return;
+							}
+							
+							if (input.strip().equals("n")) {
+								break;
+							}
+							
+							System.out.println("Invalid option\n");
+						}
+					}
+				} else {
+					System.out.println("\nError: No record found with that equipment ID!");
+				}
+				
+				stmt.close();
+				
+			} catch (SQLException e) {
+				System.err.println("*** SQLException: Could not fetch query results.");
+				System.err.println("\tMessage:   " + e.getMessage());
+				System.err.println("\tSQLState:  " + e.getSQLState());
+				System.err.println("\tErrorCode: " + e.getErrorCode());
+				System.exit(-1);
+			}	
+		}
+	}
+
+	private static void deleteERentRecord(Scanner scanner) {
+	
+		// Magic lectura -> aloe access spell
+		String oracleURL = "jdbc:oracle:thin:@aloe.cs.arizona.edu:1521:oracle";
+		// Will hold a database connection to the hard-coded Oracle database
+		Connection dbconn = null;
+
+		// Hard-coded Oracle login data for ease of access and lack of sensitive
+		// information
+		String username = "dylanacarothers";
+		String password = "a5382";
+				
+		// Load the (Oracle) JDBC driver by initializing its base class
+		try {
+			Class.forName("oracle.jdbc.OracleDriver");
+		} catch (ClassNotFoundException e) {
+			System.err.println("*** ClassNotFoundException: Error loading Oracle JDBC driver.");
+			System.err.println("\tPerhaps the driver is not on the Classpath?");
+			System.exit(-1);
+		}
+
+		// Make and return a database connection to the Oracle database
+		try {
+			dbconn = DriverManager.getConnection(oracleURL, username, password);
+		} catch (SQLException e) {
+			System.err.println("*** SQLException: Could not open JDBC connection.");
+			System.err.println("\tMessage:   " + e.getMessage());
+			System.err.println("\tSQLState:  " + e.getSQLState());
+			System.err.println("\tErrorCode: " + e.getErrorCode());
+			System.exit(-1);
+		}
+		
+		Statement stmt = null;
+		String query;
+		ResultSet result = null;
+		String prompt = "What is the rental ID you wish to delete?\n"
+				+ "Enter '-1' to cancel\n";
+		int rentalId = -1;
+		int equipId;
+		
+		while (true) {
+			System.out.println(prompt);
+				
+			rentalId = scanner.nextInt();
+			scanner.nextLine();
+			
+			if (rentalId == -1) {
+				try {
+					dbconn.close();
+				} catch (SQLException e) {
+					System.err.println("*** SQLException: Could not fetch query results.");
+					System.err.println("\tMessage:   " + e.getMessage());
+					System.err.println("\tSQLState:  " + e.getSQLState());
+					System.err.println("\tErrorCode: " + e.getErrorCode());
+					System.exit(-1);
+				}	
+				return;
+			}
+			
+			query = "SELECT * FROM bhousmans.equiprental WHERE RENTALID = ";
+			query += rentalId;
+			
+			try {
+				
+				stmt = dbconn.createStatement();
+				result = stmt.executeQuery(query);
+				
+				if (result.next()) {
+					
+					if (result.getInt("RETURNSTATUS") == 1) {
+						System.out.println("Rental log '" + rentalId + "' is currently in use!\n"
+								+ "Mark as returned in order to delete\n");
+					} else if (result.getInt("RETURNSTATUS") < 0) {
+						System.out.println("Rental log '" + rentalId + "' has already been marked as deleted!\n");
+					} else {
+
+						System.out.println("  RENTALID    EQUIPID       SPID   DATEFROM     DATETO RETURNSTATUS");
+						System.out.println("---------- ---------- ---------- ---------- ---------- ------------");
+	
+						// Use next() to advance cursor through the result tuples and
+						// print their attribute values
+						String tuple = String.format("%10s ", result.getInt("RENTALID"));
+						equipId = result.getInt("EQUIPID");
+						tuple += String.format("%10s ", equipId);
+						tuple += String.format("%10s ", result.getInt("SPID"));
+						tuple += String.format("%10s ", result.getString("DATEFROM").substring(0, 10));
+						tuple += String.format("%10s ", result.getString("DATETO").substring(0, 10));
+						tuple += String.format("%12s", result.getInt("RETURNSTATUS"));
+						System.out.println(tuple);
+						
+						System.out.println("Is this the Equipment Rental you wish to delete?\n"
+								+ "y - Continue\n"
+								+ "n - Enter a new Equipment ID\n");
+						
+						String input;
+						
+						while (true) {
+							input = scanner.nextLine();  // store user input
+							
+							if (input.strip().equals("y")) {
+								
+								stmt.close();
+								stmt = dbconn.createStatement();
+								query = "UPDATE bhousmans.equiprental SET RETURNSTATUS = -1 WHERE RENTALID = " + rentalId;
+								stmt.executeUpdate(query);
+								
+								System.out.println("Delete completed sucessfully!\n");
+
+								// Shut down the connection to the DBMS.
+								stmt.close();
+								dbconn.close();
+								return;
+							}
+							
+							if (input.strip().equals("n")) {
+								break;
+							}
+							
+							System.out.println("Invalid option\n");
+						}
+					}
+				} else {
+					System.out.println("\nError: No record found with that equipment ID!");
+				}
+				
+				stmt.close();
+				
+			} catch (SQLException e) {
+				System.err.println("*** SQLException: Could not fetch query results.");
+				System.err.println("\tMessage:   " + e.getMessage());
+				System.err.println("\tSQLState:  " + e.getSQLState());
+				System.err.println("\tErrorCode: " + e.getErrorCode());
+				System.exit(-1);
+			}	
+		}
+	}
+	
 	public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);  // use to get user input
 
@@ -1578,7 +2249,8 @@ private static void editEInvRecord(Scanner scanner) {
         		+ "4 - Add a ski pass \n"
         		+ "5 - Update ski pass \n"
         		+ "6 - Delete a ski pass\n"
-        		+ "7 - Add, update, or delete an equipment inventory record\n";
+        		+ "7 - Add, update, or delete an equipment inventory record\n"
+        		+ "8 - Add, update, or delete an equipment rental record\n";
 				
 		// prompt for operations/queries until termination
         while (true) {
@@ -1726,6 +2398,9 @@ private static void editEInvRecord(Scanner scanner) {
            }
            else if (input.strip().equals("7")) {
         	   editEInvRecord(scanner);
+           }
+           else if (input.strip().equals("8")) {
+        	   editERentRecord(scanner);
            }
            else {
         	   System.out.println("Invalid option");
