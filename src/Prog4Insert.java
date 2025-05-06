@@ -34,10 +34,11 @@ public class Prog4Insert {
 					"'" + field[0] + "'", "'" + field[1] + "'");
 			break;
 		case "liftuse": 
-			query = String.format("insert into bhousmans.%s values (%d, %d, %d)",
+			query = String.format("insert into bhousmans.%s values (%s, %d, %d, %s)",
 					fileName.toLowerCase(),
-					Integer.parseInt(field[0].trim().replaceAll("[^\\d]", "")),
-					Integer.parseInt(field[1]), Integer.parseInt(field[2]));
+					"'" + field[0] + "'",
+					Integer.parseInt(field[1]), Integer.parseInt(field[2]),
+					"'" + field[3] + "'");
 			break;
 		case "equiprental":
 			query = String.format("insert into bhousmans.%s values (%d, %d, %d, %s, %s)",
@@ -85,7 +86,7 @@ public class Prog4Insert {
 		case "lesson":
 			query = String.format("insert into bhousmans.%s values (%d, %d, %.2f, %d, %s)",
 					fileName.toLowerCase(),
-					Integer.parseInt(field[0].trim().replaceAll("[^\\d]", "")), Integer.parseInt(field[1]),
+					Integer.parseInt(field[0].trim().replaceAll("[^\\d]", "")) * -1, Integer.parseInt(field[1]),
 					Double.parseDouble(field[2]), Integer.parseInt(field[3]),
 					"'" + field[4] + "'");
 			break;
@@ -236,7 +237,7 @@ public class Prog4Insert {
         }
         
         // change the names of the files that you would like to insert here
-        String[] files = {"equipment", "member"};
+        String[] files = {"lesson"};
         for(int i = 0; i < files.length; i++) {
         	System.out.println(files[i]);
         	readCSVFile(files[i], dbconn);
