@@ -44,6 +44,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Prog4 {
 		
@@ -594,7 +595,7 @@ public class Prog4 {
     
     Purpose: This method adds a skipass into the database for a certain member.
     The member is identified by their email. The passType is also given, and this
-    will determine the cost of the ski pass. Includes error checking if there is no
+    will help determine the cost of the ski pass. Includes error checking if there is no
     member with the given email
     
     Pre-condition:  None
@@ -691,19 +692,19 @@ public class Prog4 {
 		}
 		
 		try { 
-			// assign costs
+			// assign costs 
 			double cost;
 			if (passType.equals("1-day")) {
-				cost = 99.99;
+				cost = ThreadLocalRandom.current().nextDouble(50.00, 100.00);
 			}
 			else if (passType.equals("2-day")) {
-				cost = 149.99;
+				cost = ThreadLocalRandom.current().nextDouble(120.00, 180.00); 
 			}
 			else if (passType.equals("4-day")) {
-				cost = 215.49;
+				cost = ThreadLocalRandom.current().nextDouble(200.00, 250.00);
 			}
 			else {
-				cost = 499.99;
+				cost = ThreadLocalRandom.current().nextDouble(400.00, 600.00);
 			}
 			
 			String query =     // insertion instructions
@@ -836,8 +837,7 @@ public class Prog4 {
     Method deleteSkipass (spid)
     
     Purpose: This method allows members to delete their ski passes if the 
-    pass is expired, or has no remaining uses (20 uses has been picked for
-    the max amount of uses, since it was not specified). The method utilizes
+    pass is expired, or has no remaining uses. The method utilizes
     a helper method to check if the ski pass can be deleted. The user will
     receive a message if the ski pass cannot be deleted or the ski pass with
     the given spid does not exist.
@@ -940,7 +940,7 @@ public class Prog4 {
     
     Purpose: This method is a helper method for the delete skipass method. It
     determines if a ski pass can be deleted based on if the pass has expired,
-    or still has remaining uses left (20 use max). 
+    or still has remaining uses left. 
     
     Pre-condition:  None
     
@@ -999,9 +999,14 @@ public class Prog4 {
 		Statement stmt = null;
 		
 		try { 
-			String query =   // check if there are any tuples
+			String query =  // check if there are any tuples
 				    "SELECT spid FROM bhousmans.skipass WHERE spid = " + spid + 
-				    " AND notimesused > 20 AND expirydate < SYSDATE";
+				    " AND ( " +
+				    " (passtype = '1-day' AND notimesused >= 1 AND expirydate < SYSDATE) OR " +
+				    " (passtype = '2-day' AND notimesused >= 2 AND expirydate < SYSDATE) OR " +
+				    " (passtype = '4-day' AND notimesused >= 4 AND expirydate < SYSDATE) OR " +
+				    " expirydate < SYSDATE" +
+				    ")";
 	
 	        stmt = dbconn.createStatement();
 	        ResultSet rs = stmt.executeQuery(query);
