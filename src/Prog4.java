@@ -44,6 +44,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Prog4 {
 		
@@ -594,7 +595,7 @@ public class Prog4 {
     
     Purpose: This method adds a skipass into the database for a certain member.
     The member is identified by their email. The passType is also given, and this
-    will determine the cost of the ski pass. Includes error checking if there is no
+    will help determine the cost of the ski pass. Includes error checking if there is no
     member with the given email
     
     Pre-condition:  None
@@ -691,19 +692,19 @@ public class Prog4 {
 		}
 		
 		try { 
-			// assign costs
+			// assign costs 
 			double cost;
 			if (passType.equals("1-day")) {
-				cost = 99.99;
+				cost = ThreadLocalRandom.current().nextDouble(50.00, 100.00);
 			}
 			else if (passType.equals("2-day")) {
-				cost = 149.99;
+				cost = ThreadLocalRandom.current().nextDouble(120.00, 180.00); 
 			}
 			else if (passType.equals("4-day")) {
-				cost = 215.49;
+				cost = ThreadLocalRandom.current().nextDouble(200.00, 250.00);
 			}
 			else {
-				cost = 499.99;
+				cost = ThreadLocalRandom.current().nextDouble(400.00, 600.00);
 			}
 			
 			String query =     // insertion instructions
