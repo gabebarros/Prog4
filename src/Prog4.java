@@ -43,6 +43,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -2657,7 +2660,7 @@ public class Prog4 {
         		+ "5 - Update ski pass \n"
         		+ "6 - Delete a ski pass\n"
         		+ "7 - Add, update, or delete an equipment inventory record\n"
-        		+ "8 - Add, update, or delete an equipment rental record\n";
+        		+ "8 - Add, update, or delete an equipment rental record\n"
         		+ "13 - Add Lesson Purchase Record\n"
 				+ "14 - Update Lesson Purchase Record\n"
         		+ "15 - Delete Lesson Purchase Record\n 20 - Query Information\n";
