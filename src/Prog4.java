@@ -1535,11 +1535,12 @@ private static void editEInvRecord(Scanner scanner) {
 								query = "UPDATE bhousmans.equipment SET INUSE = -1 WHERE EQUIPID = " + equipId;
 								
 								stmt.executeUpdate(query);
-								System.out.println("Delete completed sucessfully!");
+								System.out.println("Delete completed sucessfully!\n");
 
 								// Shut down the connection to the DBMS.
 								stmt.close();
 								dbconn.close();
+								return;
 								
 							}
 							
@@ -1576,7 +1577,8 @@ private static void editEInvRecord(Scanner scanner) {
         		+ "3 - Delete Member \n"
         		+ "4 - Add a ski pass \n"
         		+ "5 - Update ski pass \n"
-        		+ "6 - Delete a ski pass";
+        		+ "6 - Delete a ski pass\n"
+        		+ "7 - Add, update, or delete an equipment inventory record\n";
 				
 		// prompt for operations/queries until termination
         while (true) {
