@@ -16,6 +16,10 @@ i) Compilation:
     and therefore cannot be updated, but is retained for history.
 
 ii) Workload Distribution:
+  All members worked together to design the E-R diagram and the general database schema.
+
+  Individually:
+
   Dylan Carothers II - Responsible for implementing 'Add, update, or delete an equipment inventory record'
     functionality, as well as 'Add, update, or delete an equipment rental record' functionality. This includes
     the methods:
@@ -28,3 +32,13 @@ ii) Workload Distribution:
       -updateERentRecord
       -deleteERentRecord
     All code and comments within these methods are my own (or used from the given JDBC example).
+
+  Gabe Barros - Responsible for implementing add/update/delete a member and add/update/delete skipass. This includes the methods:
+    -addMember
+    -updateMember
+    -deleteMember
+    -memberCanBeDeleted
+    -addSkipass
+    -updateSkipass
+    -deleteSkipass
+    -skipassCanBeDeleted
