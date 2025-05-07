@@ -1074,6 +1074,9 @@ public class Prog4 {
 	 	    		System.out.println("Invalid input for lesson\nEnter an integer: Sun=1, Mon=2, Tue=3, Wed=4, Thur=5, Fri=6, Sat=7");
 	         	    System.out.println();
 	         	    lessonCode = Integer.parseInt(scanner.nextLine());
+			    if(lessonCode >= 1 && lessonCode <= 7) {
+	         		   break;
+	         	    }
 	 	    	}
 	 	    }
 	        // ask which type of lesson the user wants
