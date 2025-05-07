@@ -1,7 +1,7 @@
 /*
  *    Assignment:  Program #4 --  Database Design and Implementation
  *
- *      Authors:  Gabe Barros, Aarush Parvataneni, Dylan Carothers, Bronson Housmans
+ *      Authors:  Gabe Barros, Aarush Parvataneni, Dylan Carothers II, Bronson Housmans
  *    Language:  Java 16
  *
  *       Class:  CSC 460
@@ -1399,19 +1399,42 @@ public class Prog4 {
 		}  
 	}
 	
+	
+	/*---------------------------------------------------------------------
+    |  Method editEInvRecord
+    |
+    |  Purpose:  To direct the user into the desired-action method. Serves as
+    |		a "middle-man" between main() and the 3 separate add/update/delete
+    |		methods.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition: All confirmed actions made within the add/update/delete
+    |		methods are reflected in the Oracle DB.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used within the
+    |			add/update/delete methods to receive input from the user's
+    |			input.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
+	
 	private static void editEInvRecord(Scanner scanner) {
 		
+		// Stores the prompt to be repeatedly printed
 		String menuStr = "What would you like to do?\n"
 				+ "1 - Add Equipment Inventory Record\n"
 				+ "2 - Update Equipment Inventory Record\n"
 				+ "3 - Delete Equipment Inventory Record\n"
 				+ "4 - Return to main menu\n";
 		
+		// Stores the user's input
 		String input;
 		
 		while (true) {
 			System.out.println(menuStr);
-			input = scanner.nextLine();  // store user input
+			input = scanner.nextLine();
 			
 			if (input.strip().equals("1")) {
 				addEInvRecord(scanner);
@@ -1435,6 +1458,31 @@ public class Prog4 {
 			System.out.println("Invalid option\n");
 		}
 	}
+	
+	
+	/*---------------------------------------------------------------------
+    |  Method addEInvRecord
+    |
+    |  Purpose:  To prompt various inputs from the user necessary for the
+    |		creation of a Equipment Inventory Record within the 'equipment'
+    |		table in the Oracle Database. The method will first find the
+    |		current highest equipId (primary key) within the table and add 1
+    |		to for the new equipId. If there is no data in the table, the new
+    |		Equipment is given an equipId of 1. The method then prompts the
+    |		user for a type and then a size/length (if necessary). A new
+    |		record is then added with the given data and an INUSE value of 0.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition: An Inventory Record with the specified values is added
+    |		to the 'equipment' table within the Oracle Database.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used to receive
+    |			input from the user's keyboard.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
 	
 	private static void addEInvRecord(Scanner scanner) {
 		
@@ -1468,11 +1516,16 @@ public class Prog4 {
 			System.exit(-1);
 		}
 		
+		// Used to store the statement connection
 		Statement stmt = null;
+		// Used to store the sql query
 		String query = null;
+		// Used to store the sql results
 		ResultSet result = null;
+		// Stores the next equipId not yet in the 'equipment' table
 		int equipId = -1;
 		
+		// Calculate what the next primary key should be
 		try { 
             query = "SELECT max(equipid) FROM bhousmans.equipment";
             stmt = dbconn.createStatement();
@@ -1493,6 +1546,7 @@ public class Prog4 {
 		        System.exit(-1);
 		}
 		
+		// Stores the prompt to be repeatedly printed
 		String prompt = "What equipment type would you like to add?\n"
 				+ "1 - Boots\n"
 				+ "2 - Poles\n"
@@ -1500,36 +1554,36 @@ public class Prog4 {
 				+ "4 - Snowboard\n"
 				+ "5 - Protective Gear\n";
 		
+		// Stores the user's input
 		String input;
 		
+		// Stores a list of possible acceptable input values
 		String[] types = {"boots", "poles", "skis", "snowboard", "protective"};
+		// Stores the selected input value
 		String type;
-				
+		
+		// Keep looping until valid input is given
 		while (true) {
 			System.out.println(prompt);
 			
-			input = scanner.nextLine();  // store user input
+			input = scanner.nextLine();
 			
 			if (input.strip().equals("1")) {
 				type = types[0];
 				break;
-			}
-			
+			} 
 			if (input.strip().equals("2")) {
 				type = types[1];
 				break;
-			}
-			
+			} 
 			if (input.strip().equals("3")) {
 				type = types[2];
 				break;
-			}
-			
+			} 
 			if (input.strip().equals("4")) {
 				type = types[3];
 				break;
-			}
-			
+			} 
 			if (input.strip().equals("5")) {
 				type = types[4];
 				break;
@@ -1540,9 +1594,12 @@ public class Prog4 {
 		
 		prompt = "What is the size/length of the " + type + "?\n";
 		
+		// Stores another prompt to be printed repeatedly dependent on type
 		String range;
+		// Stores the user's input as an int
 		int slength = -1;
 		
+		// Get the size is type is boot
 		if (type.equals("boots")) {
 			range = "Enter a size between 4 and 14 (inclusive)\n"
 					+ "Half sizes are allowed, enter in format 'XX.X'\n";
@@ -1562,6 +1619,7 @@ public class Prog4 {
 			}
 		}
 		
+		// Get the length if type is pole
 		if (type.equals("poles")) {
 			range = "Enter a length between 100 and 140 (inclusive)\n";;
 			
@@ -1580,6 +1638,7 @@ public class Prog4 {
 			}
 		}
 		
+		// Get the length if type is skis
 		if (type.equals("skis")) {
 			range = "Enter a length between 115 and 200 (inclusive)\n";;
 			
@@ -1598,6 +1657,7 @@ public class Prog4 {
 			}
 		}
 		
+		// Get the length is type is snowboard
 		if (type.equals("snowboard")) {
 			range = "Enter a length between 90 and 178 (inclusive)\n";;
 			
@@ -1616,16 +1676,15 @@ public class Prog4 {
 			}
 		}
 		
+		// Set length to 0 if type is protective
 		if (type.equals("protective")) {
 			slength = 0;
 		}
 
+		// Add the Equipment Inventory Record to the Oracle Database
 		try {
-
 			stmt = dbconn.createStatement();
-			
 			query = "INSERT INTO bhousmans.equipment VALUES ( " + equipId + ", '" + type + "', " + slength + ", 0)";
-						
 			stmt.executeUpdate(query);
 
 			// Shut down the connection to the DBMS.
@@ -1636,15 +1695,41 @@ public class Prog4 {
 					+ "Equipment ID is " + equipId + "\n");
 
 		} catch (SQLException e) {
-
 			System.err.println("*** SQLException: Could not fetch query results.");
 			System.err.println("\tMessage:   " + e.getMessage());
 			System.err.println("\tSQLState:  " + e.getSQLState());
 			System.err.println("\tErrorCode: " + e.getErrorCode());			
 			System.exit(-1);
-
 		}
 	}
+	
+	
+	/*---------------------------------------------------------------------
+    |  Method updateEInvRecord
+    |
+    |  Purpose:  To get the equipId from the user that is to be updated, and
+    |		then the new values to be added. The Record is then updated and a
+    |		new one is created. The method first prompts the user to enter the
+    |		equipId that is to be updated. The method will verify that the
+    |		Record can be updated, repeating the prompt otherwise. The method
+    |		then calls the addEInvRecord to create the newly updated data, and
+    |		once it is complete, the previous Record has its INUSE value set
+    |		to -2, representing an updated item, but still retaining the log.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition: The Equipment Inventory Record with the given equipId
+    |		is updated within the 'equipment' table in the Oracle Database
+    |		with the 'INUSE' value set to -2, representing a log of an item
+    |		that has been updated. A new Equipment Inventory Record is created
+    |		with a new equipId and the specified values.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used to receive
+    |			input from the user's keyboard.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
 	
 	private static void updateEInvRecord(Scanner scanner) {
 		
@@ -1678,20 +1763,28 @@ public class Prog4 {
 			System.exit(-1);
 		}
 		
+		// Used to store the statement connection
 		Statement stmt = null;
+		// Used to store the sql query
 		String query;
+		// Used to store the sql results
 		ResultSet result = null;
+		// Stores the prompt to be repeatedly printed
 		String prompt = "What is the equipment ID of the item you wish to update?\n"
 				+ "Enter '-1' to cancel\n";
+		// Stores the equipId that is to be updated
 		int equipId = -1;
+		// Stores a boolean that controls if the loop should continue
 		boolean continuePrompt = true;
 		
+		// Keep looping until the user has selected an Equipment to update
 		while (continuePrompt) {
 			System.out.println(prompt);
 				
 			equipId = scanner.nextInt();
 			scanner.nextLine();
 			
+			// If the user entered '-1' close the connection and exit
 			if (equipId == -1) {
 				try {
 					dbconn.close();
@@ -1709,25 +1802,27 @@ public class Prog4 {
 			query += equipId;
 			
 			try {
-				
 				stmt = dbconn.createStatement();
 				result = stmt.executeQuery(query);
 				
+				// If the query contained a result, then ask the user if it
+				// is the Equipment item they want to update
 				if (result.next()) {
-					
+					// If the Equipment is already in use, print a message and loop again
 					if (result.getInt("INUSE") == 1) {
 						System.out.println("Equipment '" + equipId + "' is currently rented!\n"
 								+ "Please mark as returned to update the equipment!\n");
+					// If the Equipment has already been updated or deleted,
+					// print a message and loop again
 					} else if (result.getInt("INUSE") < 0) {
 						System.out.println("Equipment '" + equipId + "' has been retired!\n"
 								+ "Retired equipment cannot be updated!\n");
+					// The Equipment can be updated, ask the user if they want to continue
 					} else {
-
 						System.out.println("   EQUIPID EQUIPTYPE               SLENGTH      INUSE");
 						System.out.println("---------- -------------------- ---------- ----------");
 	
-						// Use next() to advance cursor through the result tuples and
-						// print their attribute values
+						// Print the attribute values
 						String tuple = String.format("%10s ", result.getInt("EQUIPID"));
 						tuple += String.format("%-20s ", result.getString("EQUIPTYPE"));
 						tuple += String.format("%10s ", result.getInt("SLENGTH"));
@@ -1739,20 +1834,20 @@ public class Prog4 {
 								+ "y - Continue\n"
 								+ "n - Enter a new Equipment ID\n");
 						
+						// Stores the user's input
 						String input;
 						
+						// Loop until the user enters 'y' or 'n'
 						while (true) {
-							input = scanner.nextLine();  // store user input
+							input = scanner.nextLine();
 							
 							if (input.strip().equals("y")) {
 								continuePrompt = false;
 								break;
 							}
-							
 							if (input.strip().equals("n")) {
 								break;
 							}
-							
 							System.out.println("Invalid option\n");
 						}
 					}
@@ -1772,13 +1867,12 @@ public class Prog4 {
 		}
 
 		try {
-
-			stmt = dbconn.createStatement();
-			
-			query = "UPDATE bhousmans.equipment SET INUSE = -2 WHERE EQUIPID = " + equipId;
-			
+			// Create a new Equipment Inventory Record
 			addEInvRecord(scanner);
 
+			// Update the old Equipment Inventory Record to have an INUSE value of -2
+			stmt = dbconn.createStatement();
+			query = "UPDATE bhousmans.equipment SET INUSE = -2 WHERE EQUIPID = " + equipId;
 			stmt.executeUpdate(query);
 			System.out.println("Update completed sucessfully!");
 
@@ -1787,15 +1881,38 @@ public class Prog4 {
 			dbconn.close();
 
 		} catch (SQLException e) {
-
 			System.err.println("*** SQLException: Could not fetch query results.");
 			System.err.println("\tMessage:   " + e.getMessage());
 			System.err.println("\tSQLState:  " + e.getSQLState());
 			System.err.println("\tErrorCode: " + e.getErrorCode());			
 			System.exit(-1);
-
 		}
 	}
+	
+	
+	/*---------------------------------------------------------------------
+    |  Method deleteEInvRecord
+    |
+    |  Purpose:  To get the equipId from the user that is to be deleted. The
+    |		Record is then updated. The method first prompts the user to enter
+    |		the equipId that is to be deleted. The method will verify that the
+    |		Record can be deleted, repeating the prompt otherwise. The Record
+    |		then has its INUSE value set to -1, representing a deleted item,
+    |		but still retaining the log.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition: The Equipment Inventory Record with the given equipId
+    |		is updated within the 'equipment' table in the Oracle Database
+    |		with the 'INUSE' value set to -1 which represents a deleted item,
+    |		but retains the log.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used to receive
+    |			input from the user's keyboard.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
 	
 	private static void deleteEInvRecord(Scanner scanner) {
 		
@@ -1829,19 +1946,26 @@ public class Prog4 {
 			System.exit(-1);
 		}
 		
+		// Used to store the statement connection
 		Statement stmt = null;
+		// Used to store the sql query
 		String query;
+		// Used to store the sql results
 		ResultSet result = null;
+		// Stores the prompt to be repeatedly printed
 		String prompt = "What is the equipment ID of the item you wish to delete?\n"
 				+ "Enter '-1' to cancel\n";
+		// Stores the equipId that is to be deleted
 		int equipId = -1;
 		
+		// Keep looping until the user has selected an Equipment to delete
 		while (true) {
 			System.out.println(prompt);
 				
 			equipId = scanner.nextInt();
 			scanner.nextLine();
 			
+			// If the user entered '-1' close the connection and exit
 			if (equipId == -1) {
 				try {
 					dbconn.close();
@@ -1859,25 +1983,27 @@ public class Prog4 {
 			query += equipId;
 			
 			try {
-				
 				stmt = dbconn.createStatement();
 				result = stmt.executeQuery(query);
 				
+				// If the query contained a result, then ask the user if it
+				// is the Equipment item they want to delete
 				if (result.next()) {
-					
+					// If the Equipment is in use, print a message and loop again
 					if (result.getInt("INUSE") == 1) {
 						System.out.println("Equipment '" + equipId + "' is currently rented!\n"
 								+ "Please mark as returned to delete the equipment!\n");
+					// If the Equipment has already been deleted or updated,
+					// print a message and loop again
 					} else if (result.getInt("INUSE") < 0) {
 						System.out.println("Equipment '" + equipId + "' has already been retired!\n"
 								+ "Retired equipment cannot be deleted!\n");
+					// The Equipment can be deleted, ask the user if they want to continue
 					} else {
-
 						System.out.println("   EQUIPID EQUIPTYPE               SLENGTH      INUSE");
 						System.out.println("---------- -------------------- ---------- ----------");
 	
-						// Use next() to advance cursor through the result tuples and
-						// print their attribute values
+						// Print the attribute values
 						String tuple = String.format("%10s ", result.getInt("EQUIPID"));
 						tuple += String.format("%-20s ", result.getString("EQUIPTYPE"));
 						tuple += String.format("%10s ", result.getInt("SLENGTH"));
@@ -1888,18 +2014,18 @@ public class Prog4 {
 								+ "y - Continue\n"
 								+ "n - Enter a new Equipment ID\n");
 						
+						// Stores user's input
 						String input;
 						
+						// Loop until the user enters 'y' or 'n'
 						while (true) {
-							input = scanner.nextLine();  // store user input
+							input = scanner.nextLine();
 							
 							if (input.strip().equals("y")) {
 								stmt.close();
 								
 								stmt = dbconn.createStatement();
-								
 								query = "UPDATE bhousmans.equipment SET INUSE = -1 WHERE EQUIPID = " + equipId;
-								
 								stmt.executeUpdate(query);
 								System.out.println("Delete completed sucessfully!\n");
 
@@ -1909,7 +2035,6 @@ public class Prog4 {
 								return;
 								
 							}
-							
 							if (input.strip().equals("n")) {
 								break;
 							}
@@ -1933,14 +2058,37 @@ public class Prog4 {
 		}
 	}
 	
+	
+	/*---------------------------------------------------------------------
+    |  Method editERentRecord
+    |
+    |  Purpose:  To direct the user into the desired-action method. Serves as
+    |		a "middle-man" between main() and the 3 separate add/update/delete
+    |		methods.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition: All confirmed actions made within the add/update/delete
+    |		methods are reflected in the Oracle DB.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used within the
+    |			add/update/delete methods to receive input from the user's
+    |			input.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
+	
 	private static void editERentRecord(Scanner scanner) {
 		
+		// Stores the prompt to be repeatedly printed
 		String menuStr = "What would you like to do?\n"
 				+ "1 - Add Equipment Rental Record\n"
 				+ "2 - Update Equipment Rental Record\n"
 				+ "3 - Delete Equipment Rental Record\n"
 				+ "4 - Return to main menu\n";
 		
+		// Stores the user's input
 		String input;
 		
 		while (true) {
@@ -1969,6 +2117,40 @@ public class Prog4 {
 			System.out.println("Invalid option\n");
 		}
 	}
+	
+	/*---------------------------------------------------------------------
+    |  Method addERentRecord
+    |
+    |  Purpose:  To prompt various inputs from the user necessary for the
+    |		creation of a Equipment Rental Record within the 'equipretnal'
+    |		table in the Oracle Database. The method will first find the
+    |		current highest rentalId (primary key) within the table and add 1
+    |		to for the new retnalId. If there is no data in the table, the new
+    |		Rental is given a rentalId of 1. The method then prompts the
+    |		user for a Ski Pass ID which is to be used to rent the equipment.
+    |		The expiration date of the Ski Pass is checked before it can be
+    |		used. Once the Ski Pass has been verified, the method prompts the
+    |		user for the Equipment ID of the item to be rented. Once the
+    |		item's availability has been verified, the user is prompted to
+    |		enter a date for when the rental will end. The rental end date is
+    |		always at least one day, but may extend up to three days, or the
+    |		date of the Ski Pass's expiration, whichever comes first. Only
+    |		after all these entries have been obtained and verified is the new
+    |		Equipment Rental Record added with a RETURNSTATUS value of 1.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition: The Equipment Rental Record with the specified values
+    |		is added to the 'equiprental' table within the Oracle Database.
+    |		The corresponding Equipment Inventory Record is updated to have an
+    |		INUSE value of 1.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used to receive
+    |			input from the user's keyboard.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
 	
 	private static void addERentRecord(Scanner scanner) {
 		
@@ -2001,12 +2183,17 @@ public class Prog4 {
 			System.err.println("\tErrorCode: " + e.getErrorCode());
 			System.exit(-1);
 		}
-				
+
+		// Used to store the statement connection
 		Statement stmt = null;
+		// Used to store the sql query
 		String query = null;
+		// Used to store the sql results
 		ResultSet result = null;
+		// Stores the next rentalId not yet in the 'equiprental' table
 		int rentalId = -1;
-				
+		
+		// Calculate what the next primary key should be
 		try {
 			query = "SELECT max(rentalid) FROM bhousmans.equiprental";
 			stmt = dbconn.createStatement();
@@ -2028,17 +2215,22 @@ public class Prog4 {
 			System.exit(-1);
 		}
 		
+		// Stores the prompt to be repeatedly printed
 		String prompt = "What is the Ski Pass ID you wish to rent from?\n"
 				+ "Enter '-1' to cancel\n";
+		// Stores the spId that is to be used to rent the Equipment
 		int spId = -1;
+		// Stores a boolean that controls if the loop should continue
 		boolean continuePrompt = true;
 		
+		// Keep looping until the user has selected a Ski Pass to use
 		while (continuePrompt) {
 			System.out.println(prompt);
 				
 			spId = scanner.nextInt();
 			scanner.nextLine();
 			
+			// If the user entered '-1' close the connection and exit
 			if (spId == -1) {
 				try {
 					dbconn.close();
@@ -2056,26 +2248,27 @@ public class Prog4 {
 			query += spId;
 			
 			try {
-				
 				stmt = dbconn.createStatement();
 				result = stmt.executeQuery(query);
 				
+				// If the query contained a result, then make sure the
+				// Ski Pass isn't expired
 				if (result.next()) {
 					
 					stmt.close();
+					
 					stmt = dbconn.createStatement();
-					
 					query += " AND EXPIRYDATE > SYSDATE";
-					
 					result = stmt.executeQuery(query);
 					
+					// If the query contained a result, then ask the user if it
+					// is the Ski Pass they want to use
 					if (result.next()) {
 						
 						System.out.println("      SPID        MID PASSTYPE EXPIRYDATE NOTIMESUSED       COST");
 						System.out.println("---------- ---------- -------- ---------- ----------- ----------");
 	
-						// Use next() to advance cursor through the result tuples and
-						// print their attribute values
+						// Print the attribute values
 						String tuple = String.format("%10s ", result.getInt("SPID"));
 						tuple += String.format("%10s ", result.getInt("MID"));
 						tuple += String.format("%8s ", result.getString("PASSTYPE"));
@@ -2088,16 +2281,17 @@ public class Prog4 {
 								+ "y - Continue\n"
 								+ "n - Enter a new Ski Pass ID\n");
 						
+						// Stores the user's input
 						String input;
 						
+						// Loop until the user enters 'y' or 'n'
 						while (true) {
-							input = scanner.nextLine();  // store user input
+							input = scanner.nextLine();
 							
 							if (input.strip().equals("y")) {
 								continuePrompt = false;
 								break;
 							}
-							
 							if (input.strip().equals("n")) {
 								break;
 							}
@@ -2124,16 +2318,18 @@ public class Prog4 {
 		
 		prompt = "What is the equipment ID of the item you wish to rent?\n"
 				+ "Enter '-1' to cancel\n";
+		// Stores the equipId of the Equipment to be rented
 		int equipId = -1;
-		
 		continuePrompt = true;
 		
+		// Keep looping until the user has selected an Equipment item to use
 		while (continuePrompt) {
 			System.out.println(prompt);
 				
 			equipId = scanner.nextInt();
 			scanner.nextLine();
 			
+			// If the user entered '-1' close the connection and exit
 			if (equipId == -1) {
 				try {
 					dbconn.close();
@@ -2151,25 +2347,26 @@ public class Prog4 {
 			query += equipId;
 			
 			try {
-				
 				stmt = dbconn.createStatement();
 				result = stmt.executeQuery(query);
 				
+				// If the query contained a result, then ask the user if it
+				// is the Equipment item they want to rent
 				if (result.next()) {
-					
+					// If the Equipment is already in use, print a message and loop again
 					if (result.getInt("INUSE") == 1) {
 						System.out.println("Equipment '" + equipId + "' is currently rented!\n"
 								+ "Cannot rent an item currently in use!\n");
+					// If the Equipment has been deleted or updated, print a message and loop again
 					} else if (result.getInt("INUSE") < 0) {
 						System.out.println("Equipment '" + equipId + "' has already been retired!\n"
 								+ "Retired equipment cannot be rented!\n");
+					// The Equipment can be rented, ask the user if they want to continue
 					} else {
-
 						System.out.println("   EQUIPID EQUIPTYPE               SLENGTH      INUSE");
 						System.out.println("---------- -------------------- ---------- ----------");
 	
-						// Use next() to advance cursor through the result tuples and
-						// print their attribute values
+						// Print the attribute values
 						String tuple = String.format("%10s ", result.getInt("EQUIPID"));
 						tuple += String.format("%-20s ", result.getString("EQUIPTYPE"));
 						tuple += String.format("%10s ", result.getInt("SLENGTH"));
@@ -2180,17 +2377,17 @@ public class Prog4 {
 								+ "y - Continue\n"
 								+ "n - Enter a new Equipment ID\n");
 						
+						// Stores the user's input
 						String input;
 						
+						// Loop until the user enters 'y' or 'n'
 						while (true) {
-							input = scanner.nextLine();  // store user input
+							input = scanner.nextLine();
 							
 							if (input.strip().equals("y")) {								
 								continuePrompt = false;
 								break;
-								
 							}
-							
 							if (input.strip().equals("n")) {
 								break;
 							}
@@ -2213,9 +2410,12 @@ public class Prog4 {
 			}	
 		}
 		
+		// Stores the max number of days the user can rent the item for
 		int maxDays = 0;
+		// Stores the chosen number of days the user will rent the item for
 		int rentalDays = 0;
 		
+		// Calculate the number of days remaining on the chosen Ski Pass rounded up
 		try {
 			query = "SELECT (EXPIRYDATE - SYSDATE) FROM bhousmans.skipass WHERE SPID = " + spId;
 			stmt = dbconn.createStatement();
@@ -2233,6 +2433,8 @@ public class Prog4 {
 			System.exit(-1);
 		}
 		
+		// If the Ski Pass expires the day of rental, they can only rent the
+		// Equipment item for one day
 		if (maxDays < 1) {
 			prompt = "Ski Pass expires today!\n"
 					+ "Equipment can only be rented for 1 day\n"
@@ -2240,6 +2442,7 @@ public class Prog4 {
 					+ "y - Continue\n"
 					+ "n - Exit to main menu\n";
 			rentalDays = 1;
+		// If the user has a choice of rental days, get their input
 		} else {
 			if (maxDays > 3) {
 				maxDays = 3;
@@ -2251,6 +2454,7 @@ public class Prog4 {
 					+ "y - Continue\n"
 					+ "n - Exit to main menu\n";
 			
+			// Loop until a valid number has been entered
 			while (true) {
 				System.out.println(prompt);
 				
@@ -2270,12 +2474,17 @@ public class Prog4 {
 					+ "n - Exit to main menu\n";
 		}
 		
+		// Stores the user's input
 		String input;
 		
+		// Loop until the user enters 'y' or 'n'
 		while (true) {
 			System.out.println(prompt);
-			input = scanner.nextLine();  // store user input
+			input = scanner.nextLine();
 			
+			// If the user enters 'y' create the new Equipment Rental Record
+			// with the entered values, and update the corresponding Equipment
+			// Inventory Record to have an INUSE value of 1.
 			if (input.strip().equals("y")) {
 				query = "INSERT INTO bhousmans.equiprental VALUES( " + rentalId + ", "
 						+ equipId + ", " + spId + ", SYSDATE, (SYSDATE + " + rentalDays
@@ -2323,8 +2532,33 @@ public class Prog4 {
 			System.exit(-1);
 		}	
 		return;
-		
 	}
+	
+	/*---------------------------------------------------------------------
+    |  Method updateERentRecord
+    |
+    |  Purpose:  To get the rentalId from the user that is to be updated. The
+    |		Record is then updated. The method first prompts the user to enter
+    |		the retnalId that is to be updated. The method will verify that the
+    |		Record can be updated, repeating the prompt otherwise. The
+    |		corresponding Equipment Inventory Record then has its INUSE value
+    |		set to 0, showing that it may be rented. The Rental Record then
+    |		has its RETURNSTATUS value set to 0, representing that the item
+    |		has been returned and the rental is complete.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition:  An Equipment Rental Record with the given rentalId is
+    |		updated  within the 'equiprental' table in the Oracle Database 
+    |		with the 'RETURNSTATUS' value set to 0. The corresponding
+    |		Equipment Inventory Record is updated to have an INUSE value of 0.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used to receive
+    |			input from the user's keyboard.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
 	
 	private static void updateERentRecord(Scanner scanner) {
 		
@@ -2358,20 +2592,28 @@ public class Prog4 {
 			System.exit(-1);
 		}
 		
+		// Used to store the statement connection
 		Statement stmt = null;
+		// Used to store the sql query
 		String query;
+		// Used to store the sql results
 		ResultSet result = null;
+		// Stores the prompt to be repeatedly printed
 		String prompt = "What is the rental ID you wish to update?\n"
 				+ "Enter '-1' to cancel\n";
+		// Stores the next rentalId not yet in the 'equiprental' table
 		int rentalId = -1;
+		// Stores the equipId that is to be updated
 		int equipId;
 		
+		// Keep looping until the user has selected an Equipment Rental to update
 		while (true) {
 			System.out.println(prompt);
 				
 			rentalId = scanner.nextInt();
 			scanner.nextLine();
 			
+			// If the user entered '-1' close the connection and exit
 			if (rentalId == -1) {
 				try {
 					dbconn.close();
@@ -2389,23 +2631,24 @@ public class Prog4 {
 			query += rentalId;
 			
 			try {
-				
 				stmt = dbconn.createStatement();
 				result = stmt.executeQuery(query);
 				
+				// If the query contained a result, then ask the user if it
+				// is the Equipment Rental they want to update
 				if (result.next()) {
-					
+					// If the Rental has already been updated, print a message and loop again
 					if (result.getInt("RETURNSTATUS") == 0) {
 						System.out.println("Rental log '" + rentalId + "' has already been marked as returned!\n");
+					// If the Rental had been deleted, print a message and loop again
 					} else if (result.getInt("RETURNSTATUS") < 0) {
 						System.out.println("Rental log '" + rentalId + "' has already been marked as deleted!\n");
+					// The Rental can be updated, ask the user if they want to continue
 					} else {
-
 						System.out.println("  RENTALID    EQUIPID       SPID   DATEFROM     DATETO RETURNSTATUS");
 						System.out.println("---------- ---------- ---------- ---------- ---------- ------------");
 	
-						// Use next() to advance cursor through the result tuples and
-						// print their attribute values
+						// Print the attribute values
 						String tuple = String.format("%10s ", result.getInt("RENTALID"));
 						equipId = result.getInt("EQUIPID");
 						tuple += String.format("%10s ", equipId);
@@ -2419,11 +2662,16 @@ public class Prog4 {
 								+ "y - Continue\n"
 								+ "n - Enter a new Equipment ID\n");
 						
+						// Stores the user's input
 						String input;
 						
+						// Loop until the user enters 'y' or 'n'
 						while (true) {
-							input = scanner.nextLine();  // store user input
+							input = scanner.nextLine();
 							
+							// If the user enters 'y', update the selected Equipment Rental Record
+							// to have a RETURNSTATUS value of 0 and the corresponding Equipment
+							// Inventory Record to have an INUSE value of 0
 							if (input.strip().equals("y")) {
 								stmt.close();
 								
@@ -2467,6 +2715,30 @@ public class Prog4 {
 		}
 	}
 
+	/*---------------------------------------------------------------------
+    |  Method deleteERentRecord
+    |
+    |  Purpose:  To get the rentalId from the user that is to be deleted. The
+    |		Record is then updated. The method first prompts the user to enter
+    |		the retnalId that is to be deleted. The method will verify that the
+    |		Record can be deleted, repeating the prompt otherwise. The Record
+    |		then has its RETURNSTATUS value set to -1, representing a deleted
+    |		rental, but still retaining the log.
+    |
+    |  Pre-condition:  None.
+    |
+    |  Post-condition: The Equipment Rental Record with the given rentalId is
+    |		updated within the 'equiprental' table in the Oracle Database with
+    |		the 'RETURNVALUE' set to -1 which represents a deleted record, but
+    |		retains the log.
+    |
+    |  Parameters:
+    |		scanner - A Scanner object cleared of input to be used to receive
+    |			input from the user's keyboard.
+    |
+    |  Returns:  None.
+    *-------------------------------------------------------------------*/
+	
 	private static void deleteERentRecord(Scanner scanner) {
 	
 		// Magic lectura -> aloe access spell
@@ -2497,22 +2769,30 @@ public class Prog4 {
 			System.err.println("\tSQLState:  " + e.getSQLState());
 			System.err.println("\tErrorCode: " + e.getErrorCode());
 			System.exit(-1);
-		}
+		}		
 		
+		// Used to store the statement connection
 		Statement stmt = null;
+		// Used to store the sql query
 		String query;
+		// Used to store the sql results
 		ResultSet result = null;
+		// Stores the prompt to be repeatedly printed
 		String prompt = "What is the rental ID you wish to delete?\n"
 				+ "Enter '-1' to cancel\n";
+		// Stores the rentalId that is to be deleted
 		int rentalId = -1;
+		// Stores the corresponding equipId of the Rental that is to be deleted
 		int equipId;
 		
+		// Keep looping until the user has selected an Equipment Rental to delete
 		while (true) {
 			System.out.println(prompt);
 				
 			rentalId = scanner.nextInt();
 			scanner.nextLine();
 			
+			// If the user entered '-1' close the connection and exit
 			if (rentalId == -1) {
 				try {
 					dbconn.close();
@@ -2530,24 +2810,25 @@ public class Prog4 {
 			query += rentalId;
 			
 			try {
-				
 				stmt = dbconn.createStatement();
 				result = stmt.executeQuery(query);
 				
+				// If the query contained a result, then ask the user if it
+				// is the Equipment Rental they want to delete
 				if (result.next()) {
-					
+					// If the Rental is still in use, print a message and loop again
 					if (result.getInt("RETURNSTATUS") == 1) {
 						System.out.println("Rental log '" + rentalId + "' is currently in use!\n"
 								+ "Mark as returned in order to delete\n");
+					// If the Rental has already been deleted, print a message and loop again
 					} else if (result.getInt("RETURNSTATUS") < 0) {
 						System.out.println("Rental log '" + rentalId + "' has already been marked as deleted!\n");
+					// The Rental can be deleted, ask the user if they want to continue
 					} else {
-
 						System.out.println("  RENTALID    EQUIPID       SPID   DATEFROM     DATETO RETURNSTATUS");
 						System.out.println("---------- ---------- ---------- ---------- ---------- ------------");
 	
-						// Use next() to advance cursor through the result tuples and
-						// print their attribute values
+						// Print the attribute values
 						String tuple = String.format("%10s ", result.getInt("RENTALID"));
 						equipId = result.getInt("EQUIPID");
 						tuple += String.format("%10s ", equipId);
@@ -2561,11 +2842,15 @@ public class Prog4 {
 								+ "y - Continue\n"
 								+ "n - Enter a new Equipment ID\n");
 						
+						// Stores the user's input
 						String input;
 						
+						// Loop until the user enters 'y' or 'n'
 						while (true) {
-							input = scanner.nextLine();  // store user input
+							input = scanner.nextLine();
 							
+							// If the user enters 'y', update the Rental Record to have a
+							// RETURNSTATUS value of -1
 							if (input.strip().equals("y")) {
 								
 								stmt.close();
