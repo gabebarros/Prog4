@@ -47,3 +47,11 @@ ii) Workload Distribution:
   This includes the methods:
     -privateOrGroup
     -lessonReg
+
+  Aarush Parvataneni - Responsible for making the queries implementation. This includes the methods:
+    -- getSkiLesson
+    -- askQueryInfo
+    -- getSkiPassInfo
+    -- getTrivial
+    -- getOpenTrails
+    -- private class trailInfo
