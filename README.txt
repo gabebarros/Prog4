@@ -42,3 +42,8 @@ ii) Workload Distribution:
     -updateSkipass
     -deleteSkipass
     -skipassCanBeDeleted
+
+  Bronson Housmans - Responsible for creating SQL tables, inserting initial test data, and add/update/delete a lesson registration
+  This includes the methods:
+    -privateOrGroup
+    -lessonReg
