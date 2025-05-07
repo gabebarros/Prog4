@@ -3119,7 +3119,11 @@ public class Prog4 {
 
 	}
 
+	
+	// Once the user selects to query information, he will be redirected to this method -
+	// which asks the user to select the query that they want to do.
 	private static void askQueryInfo(Scanner input, Connection dbconn) {
+		// first print out the query descriptions
 		System.out.println("Here is a list of queries that can be made. Please enter the number corresponding to the query to select it!");
 		System.out.println();
 		System.out.println("1. For a given member, list all the ski lessons they have purchased, including the number of remaining\r\n"
@@ -3132,11 +3136,11 @@ public class Prog4 {
 				+ "that are currently operational.");
 		System.out.println();
 		System.out.println("4. For a given lift, see what trails you can access, and whether they are active or not!");
-		String choiceStr = input.nextLine();
+		String choiceStr = input.nextLine(); // use scanner to collect the choice
 		int choice;
 		try {
 			choice = Integer.parseInt(choiceStr);
-		} catch (NumberFormatException e) {
+		} catch (NumberFormatException e) { // if the user inputs a non-integer
 			System.out.println("Invalid input - please enter a number between 1 - 4!");
 			return;
 		}
@@ -3154,22 +3158,24 @@ public class Prog4 {
 			System.out.print("Please enter a valid skilift name: ");
 			String theInfo = input.nextLine();
 			getTrivial(dbconn, theInfo);
-		} else {
+		} else { // if the user doesn't input a valid option
 			System.out.println("Invalid input - please enter a number between 1 - 4!");
 		}
 		
 	}
-	
+
+	// implements the first query - gets the member's ski lesson information
 	private static void getSkiLesson(Connection dbconn, String member) {
 		// bhousmans.member -> bhousmans.lessonreg (list of skilessons (orderid, lessoncode), remainingsessions) -> bhousmans.lesson (schedule) -> bhousmans.employee (firstname, lastname)          
 		int mid;
-		try {
+		try { // input validation
 			mid = Integer.parseInt(member);
 		} catch (NumberFormatException e) {
 			System.out.println("Invalid memberID entered. Please enter a valid member ID.");
 			return;
 		}
-		
+
+		 // input validation to ensure the memberID exists in DB
 		String query = "SELECT count(*) from bhousmans.member where mid = " + mid;
 		ResultSet answer = null;
 		Statement stmt = null;
@@ -3177,12 +3183,14 @@ public class Prog4 {
 			stmt = dbconn.createStatement();
 			answer = stmt.executeQuery(query);
 			if (answer.next()) {
+				// if mid doesn't exist in db
 				if (answer.getInt(1) == 0) {
 					System.out.println("Invalid memberID entered. Please enter a valid member ID.");
 					return;
 				}
-			} else {throw new SQLException();}
-			
+			} else {throw new SQLException();} // something wrong with the db connection if we don't get a result for count(*)
+
+			// query to obtain the actual lesson information
 			query = "select lg.orderid, lg.lessoncode, lg.remainingsessions, l.schedule, e.firstname, e.lastname "
 					+ "from bhousmans.lessonreg lg join bhousmans.lesson l on lg.lessoncode = l.lessoncode "
 					+ "left join bhousmans.employee e on l.eid = e.eid where lg.mid = " + mid;
@@ -3190,6 +3198,7 @@ public class Prog4 {
 			int empty = 1;
 			System.out.println("ORDERID\tLESSON\tSCHEDULE\tSESSIONS_REMAINING\tINSTRUCTOR");
 			System.out.println("---------------------------------------");
+			// print out the lesson info row by row
 			while (answer.next()) {
 				empty--;
 			    int orderId = answer.getInt("orderid");
@@ -3206,7 +3215,7 @@ public class Prog4 {
 			    System.out.print(firstName + " " + lastName + "\n");
 			    
 			}
-			if (empty == 1) {
+			if (empty == 1) { // if the result table is empty
 				System.out.println("Given member " + member + " doesn't have any purchased ski lessons.");
 				return;
 			}
@@ -3220,32 +3229,33 @@ public class Prog4 {
 		
 	}
 	
-	
+	// implements the second query to get the lift and equipmental rental info associated with a ski pass
 	private static void getSkiPassInfo(Connection dbconn, String spid) {
 		// bhousmans.skipass -> bhousmans.liftuse (nouses) -> bhousmans.lift (lname, status)
 		// bhousmans.skipass -> bhousmans.equiprental (datefrom, dateto) -> bhousmans.equipment (equiptype, slength, inUse)
 	
 		int sid;
-		try {
+		try { // user input validation
 			sid = Integer.parseInt(spid);
 		} catch (NumberFormatException e) {
 			System.out.println("Invalid memberID entered. Please enter a valid member ID.");
 			return;
 		}
-		
-		String query = "SELECT count(*) from bhousmans.skipass where mid = " + sid;
+		// user input validation to ensure ski pass exists
+		String query = "SELECT count(*) from bhousmans.skipass where spid = " + sid;
 		ResultSet answer = null;
 		Statement stmt = null;
 		try {
 			stmt = dbconn.createStatement();
 			answer = stmt.executeQuery(query);
 			if (answer.next()) {
-				if (answer.getInt(1) == 0) {
+				if (answer.getInt(1) == 0) { // when ski pass doesnt exist in DB
 					System.out.println("Invalid skipass number entered. Please enter a valid skipass ID.");
 					return;
 				}
 			} else {throw new SQLException();}
-			
+
+			// actual query to get the lift use info of the skipass
 			query = "select lu.nouses, l.lname, l.status from bhousmans.liftuse lu "
 					+ "join bhousmans.lift l on l.lname = lu.lname where lu.spid = " + spid; // liftuse should have a timestamp value
 			answer = stmt.executeQuery(query);
@@ -3263,15 +3273,17 @@ public class Prog4 {
 				else {System.out.print("INACTIVE\n");}
 				
 			}
-			if (empty == 1) {
+			if (empty == 1) { // if the ski pass hasn't used the lifts
 				System.out.println("Given ski pass " + spid + " hasn't used the lift.");
 			}
 			empty = 1;
+			// to get equipment rental information
 			query = "select er.rentalid, er.datefrom, er.dateto, eq.equiptype, eq.slength from bhousmans.equiprental er "
 					+ "join bhousmans.equipment eq on er.equipid = eq.equipid where er.spid = " + spid;
 			answer = stmt.executeQuery(query);
 			System.out.println("RENTAL ID\tEQUIPMENT\tSIZE\tDATE_BORROWED\tRETURN_BY");
 			System.out.println("---------------------------------------");
+			// printing out the results row by row
 			while (answer.next()) {
 				empty--;
 				int rid = answer.getInt("rentalid");
@@ -3281,6 +3293,7 @@ public class Prog4 {
 			    int size = answer.getInt("slength");
 			    System.out.print(rid + "\t");
 			    System.out.print(equipment + "\t");
+				// boots are stored as size*10 in db since our SIZE field is an int
 			    if (equipment.toLowerCase().equals("boots")) {System.out.print(((float) size / 10)+"\t");}
 			    else {System.out.print(size + "\t");}
 			    System.out.print(dateFrom + "\t");
@@ -3298,12 +3311,15 @@ public class Prog4 {
 	
 	
 	}
-	
+
+	// this private class is used in the third query to ensure we can store all the trail information
+	// with a list of lifts to be printed out in 1 go
 	private static class trailInfo {
 		public int start, end;
 		public String tname, category;
 		public ArrayList<String> lname;
-		
+
+		// initializes the fields (startTime, endTime, tname, category
 		public trailInfo(int s, int e, String t, String c) {
 			start = s;
 			end = e;
@@ -3311,26 +3327,29 @@ public class Prog4 {
 			category = c;
 			lname = new ArrayList<String>();
 		}
-		
+		// adds a lift to the lift arraylist
 		public void addLift(String l) {
 			lname.add(l);
 		}
 	}
-	
+
+	// obtains all the open trails of intermediate difficulty and the lifts that connect to them
 	private static void getOpenTrails(Connection dbconn) {
 		// bhousmans.trail (where difficulty = intermediate & status = 1) (tname, startloc, endloc, category) ->
-		// bhousmans.lifttrailconn -> bhousmans.lift (lname) where status = 1
+		// bhousmans.lifttrailconn -> bhousmans.lift (lname)
 		String query = "select t.tname, t.startloc, t.endloc, t.category, l.lname, l.status from bhousmans.trail t left join bhousmans.lifttrailconn lt"
 				+ " on t.tname = lt.tname left join bhousmans.lift l on l.lname = lt.lname "
 				+ "where t.status = 1 and t.difficulty = 'Intermediate'";
 		Statement stmt;
-		HashMap<String, trailInfo> map = new HashMap<>();
+		HashMap<String, trailInfo> map = new HashMap<>(); // hashed with a tname, trailInfo key-value pair
 		try {
 			stmt = dbconn.createStatement();
 			ResultSet answer = stmt.executeQuery(query);
 			int empty = 1;
 			System.out.println("TRAIL\tSTART_LOCATION\tEND_LOCATION\tCATEGORY\tLIFT_ACCESSED_BY");
 			System.out.println("---------------------------------------");
+			// this query will result in many duplicate tname rows depending on the number of lifts that connect to it
+			// hence we have to do some more processing to make the output cleaner.
 			while (answer.next()) {
 				empty--;
 				String tname = answer.getString("tname");
@@ -3338,15 +3357,16 @@ public class Prog4 {
 				int start = answer.getInt("startloc");
 				int end = answer.getInt("endloc");
 				String cat = answer.getString("category");
-				Integer status = answer.getObject("status", Integer.class);
+				Integer status = answer.getObject("status", Integer.class); // using Integer to ensure we get null for status
+				// when the tname already exists
 				if (map.containsKey(tname)) {
-					if (status != null && status.equals(1)) {
+					if (status != null && status.equals(1)) { // adding the lift if it is active
 						map.get(tname).addLift(lname);
 					}
-				} else {
+				} else { // creating a new tname
 					trailInfo t = new trailInfo(start, end, tname, cat);
 					map.put(tname, t);
-					if (status != null && status.equals(1)) {
+					if (status != null && status.equals(1)) { // add the lift if it is active
 						t.addLift(lname);
 					}
 				}
@@ -3355,7 +3375,7 @@ public class Prog4 {
 				System.out.println("There are no active intermediate trails right now.");
 				return;
 			}
-			
+			// now print out every trail in the hashmap
 			for (Map.Entry<String, trailInfo> entry : map.entrySet()) {
 				trailInfo t = entry.getValue();
 				System.out.print(t.tname + "\t");
@@ -3363,7 +3383,7 @@ public class Prog4 {
 				System.out.print(t.end + "\t");
 				System.out.print(t.category + "\t");
 				int first = 0;
-				for (String lname : t.lname) {
+				for (String lname : t.lname) { // print out every lift connecting to the trail
 					if (first == 0) {System.out.print(lname + "\n");}
 					else {System.out.print("\t\t\t\t" + lname + "\n");}
 					first--;
@@ -3379,11 +3399,15 @@ public class Prog4 {
 		
 		
 	}
-	
+
+	// this method implements our 4th and trivial query which asks the user for a lift name and outputs all the trails and 
+	// their info which are connected by the lift
 	private static void getTrivial(Connection dbconn, String lname) {
 		// given a lift , list out all connected lifts/trails, their timings, status, and start end loc
 		// bhousmans.lift -> lifttrailconn -> trail (tname, startloc, endloc, difficulty, category, status)
-		String query = "SELECT count(*) from bhousmans.lift where lname = '" + lname + "'";
+
+		// input validation - checking the lift actually exists
+		String query = "SELECT count(*) from bhousmans.lift where lname = '" + lname + "'"; 
 		ResultSet answer = null;
 		Statement stmt = null;
 		try {
@@ -3395,24 +3419,27 @@ public class Prog4 {
 					return;
 				}
 			} else {throw new SQLException();}
-			
+			// query joins lift and trail relations
 			query = "select l.opentime, l.closetime, l.status, t.tname, t.difficulty, t.category, t.status as tstat, t.startloc, t.endloc "
 					+ "from bhousmans.lift l join bhousmans.lifttrailconn lt on l.lname = lt.lname "
 					+ "join bhousmans.trail t on lt.tname = t.tname where UPPER(l.lname) = UPPER('" + lname + "')";
 			answer = stmt.executeQuery(query);
 			int empty = 1;
 			while (answer.next()) {
+				// print out the lift info only once
 				if (empty == 1) {
 					int open = answer.getInt("opentime");
 					int close = answer.getInt("closetime");
 					int stat = answer.getInt("status");
 					String statStr;
+					// convert status from int to string
 					if (stat == 1) {statStr = "ACTIVE";}
 					else {statStr = "INACTIVE";}
 					System.out.println("The chosed lift " + lname + " opens at " + open + " and closes at " + close + " and has the status " + statStr + "." );
 					System.out.println("TRAIL\tSTART LOCATION\tEND LOCATION\tCATEGORY\tDIFFICULTY\tSTATUS");
 					System.out.println("---------------------------------------");
 				}
+				// print out the trail info for each trail
 				empty--;
 				String tname = answer.getString("tname");
 				String cat = answer.getString("category");
