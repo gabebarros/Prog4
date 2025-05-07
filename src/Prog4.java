@@ -2502,7 +2502,8 @@ public class Prog4 {
 					stmt = dbconn.createStatement();
 					stmt.executeUpdate(query);
 					
-					System.out.println("Equipment Rental Record added sucessfully!");
+					System.out.println("Equipment Rental Record added sucessfully!"
+							   + "Rental ID is " + rentalId + "\n");
 
 					// Shut down the connection to the DBMS.
 					stmt.close();
